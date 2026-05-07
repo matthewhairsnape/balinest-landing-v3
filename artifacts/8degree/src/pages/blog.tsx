@@ -1,0 +1,130 @@
+import { useState } from "react";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { Clock, User } from "lucide-react";
+import { useListBlogPosts, useListBlogCategories } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
+import { Seo } from "@/components/site/Seo";
+import { truncateForMeta } from "@/lib/site-seo";
+
+export default function Blog() {
+  const [activeCategory, setActiveCategory] = useState<string>("");
+  const { data, isLoading } = useListBlogPosts({ limit: 20 });
+  const { data: catData } = useListBlogCategories();
+
+  const posts = (data?.posts ?? []).filter(p =>
+    !activeCategory || p.categoryName === activeCategory
+  );
+  const categories = catData?.categories ?? [];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Seo
+        title="Journal · Bali property insights"
+        description={truncateForMeta(
+          "Guides and perspectives on luxury Bali real estate, investment, and lifestyle from the 8 Degree team.",
+        )}
+        path="/blog"
+      />
+      <div className="bg-foreground text-background pt-32 pb-16 px-6">
+        <div className="container mx-auto max-w-6xl">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs tracking-[0.3em] uppercase text-primary mb-4"
+          >
+            Insights & Perspectives
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="font-serif text-4xl md:text-6xl leading-tight"
+          >
+            The Journal
+          </motion.h1>
+        </div>
+      </div>
+
+      <div className="container mx-auto max-w-6xl px-6 py-12">
+        {/* Category Filter */}
+        <div className="flex gap-3 flex-wrap mb-12">
+          <button
+            onClick={() => setActiveCategory("")}
+            className={`text-xs tracking-[0.2em] uppercase px-4 py-2 border transition-colors ${!activeCategory ? 'bg-foreground text-background border-foreground' : 'border-border hover:border-foreground'}`}
+            data-testid="button-cat-all"
+          >
+            All
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.name)}
+              className={`text-xs tracking-[0.2em] uppercase px-4 py-2 border transition-colors ${activeCategory === cat.name ? 'bg-foreground text-background border-foreground' : 'border-border hover:border-foreground'}`}
+              data-testid={`button-cat-${cat.slug}`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="space-y-3">
+                <div className="aspect-video bg-muted animate-pulse" />
+                <div className="h-4 bg-muted animate-pulse w-3/4" />
+                <div className="h-4 bg-muted animate-pulse w-full" />
+              </div>
+            ))}
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-24 text-muted-foreground">
+            <p className="font-serif text-2xl">No articles in this category</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {posts.map((post, i) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07 }}
+                data-testid={`card-blog-${post.id}`}
+              >
+                <Link href={`/blog/${post.slug}`}>
+                  <div className="group cursor-pointer">
+                    <div className="relative aspect-video overflow-hidden bg-muted mb-4">
+                      {post.featuredImageUrl ? (
+                        <img
+                          src={post.featuredImageUrl}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50" />
+                      )}
+                      {post.categoryName && (
+                        <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] tracking-[0.2em] uppercase px-2 py-1">
+                          {post.categoryName}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                      <span className="flex items-center gap-1"><User size={10} /> {post.author}</span>
+                      <span className="flex items-center gap-1"><Clock size={10} /> {post.readingTime} min read</span>
+                    </div>
+                    <h3 className="font-serif text-xl leading-snug group-hover:text-primary transition-colors mb-2">
+                      {post.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm line-clamp-3">{post.excerpt}</p>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
