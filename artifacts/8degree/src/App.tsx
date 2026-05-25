@@ -25,8 +25,14 @@ const BlogDetail = lazy(() => import("@/pages/blog-detail"));
 const About = lazy(() => import("@/pages/about"));
 const Contact = lazy(() => import("@/pages/contact"));
 const Invest = lazy(() => import("@/pages/invest"));
+const InvestmentGuide = lazy(() => import("@/pages/investment-guide"));
 const Pricing = lazy(() => import("@/pages/pricing"));
 const InfoPage = lazy(() => import("@/pages/info-page"));
+const LongTermRentals = lazy(() => import("@/pages/long-term-rentals"));
+const BuyerAgent = lazy(() => import("@/pages/buyer-agent"));
+const SellerAgent = lazy(() => import("@/pages/seller-agent"));
+const LegalGuide = lazy(() => import("@/pages/legal-guide"));
+const LocationGuide = lazy(() => import("@/pages/location-guide"));
 
 const AdminDashboard = lazy(() => import("@/pages/admin/dashboard"));
 const AdminProjects = lazy(() => import("@/pages/admin/projects"));
@@ -143,8 +149,13 @@ function Router() {
       <Route path="/about-us" component={wrapPublic(About)} />
       <Route path="/contact" component={wrapPublic(Contact)} />
       <Route path="/invest" component={wrapPublic(Invest)} />
+      <Route path="/investment-guide" component={wrapPublic(InvestmentGuide)} />
       <Route path="/sell" component={wrapPublic(Invest)} />
-      <Route path="/buyer-agents" component={wrapPublic(Invest)} />
+      <Route path="/buyer-agents" component={wrapPublic(BuyerAgent)} />
+      <Route path="/buyer-agent" component={wrapPublic(BuyerAgent)} />
+      <Route path="/seller-agents" component={wrapPublic(SellerAgent)} />
+      <Route path="/seller-agent" component={wrapPublic(SellerAgent)} />
+      <Route path="/legal-guide" component={wrapPublic(LegalGuide)} />
       <Route path="/pricing" component={wrapPublic(Pricing)} />
       <Route path="/journal" component={wrapPublic(Blog)} />
       <Route path="/buy-land" component={wrapPublic(Projects)} />
@@ -156,8 +167,9 @@ function Router() {
       <Route path="/legal-and-due-diligence" component={wrapPublic(InfoPage)} />
       <Route path="/data-driven" component={wrapPublic(InfoPage)} />
       <Route path="/bali-property-guide" component={wrapPublic(InfoPage)} />
-      <Route path="/bali-location-guide" component={wrapPublic(InfoPage)} />
-      <Route path="/location-guide" component={wrapPublic(InfoPage)} />
+      <Route path="/bali-location-guide" component={wrapPublic(LocationGuide)} />
+      <Route path="/location-guide" component={wrapPublic(LocationGuide)} />
+      <Route path="/long-term-rentals" component={wrapPublic(LongTermRentals)} />
 
       <Route component={NotFound} />
     </Switch>
@@ -168,7 +180,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <WouterRouter base={(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}>
           <Router />
         </WouterRouter>
         <Toaster />

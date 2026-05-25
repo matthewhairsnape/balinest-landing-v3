@@ -14,7 +14,7 @@ export default function AdminSettings() {
           e.g. <code>https://api.yourdomain.com</code>, so all API client calls and admin <code>fetch</code> helpers use
           that host. Leave it unset for local Vite dev (proxy still targets <code>API_URL</code> / localhost:8080).
         </p>
-        <ul className="list-disc pl-5 space-y-1 text-xs font-mono text-foreground/90">
+        <ul className="list-disc pl-5 space-y-1 text-xs font-sans text-foreground/90">
           <li>
             PROPERTY_INVENTORY_SOURCE: <strong>Google Sheets only</strong> for inventory when unset or <code>sheet</code>{" "}
             (or any value other than <code>database</code> / <code>db</code> / <code>postgres</code>). Use{" "}

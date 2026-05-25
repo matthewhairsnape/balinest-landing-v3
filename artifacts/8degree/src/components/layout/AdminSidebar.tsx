@@ -44,7 +44,7 @@ function NavLink({ href, label, icon: Icon }: NavLinkItem) {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground first:pt-2">
+    <div className="px-3 pb-1.5 pt-5 text-[10px] font-medium uppercase tracking-[0.28em] text-muted-foreground first:pt-2">
       {children}
     </div>
   );

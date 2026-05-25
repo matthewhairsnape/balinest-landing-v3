@@ -6,8 +6,57 @@ import { useListBlogPosts, useListBlogCategories } from "@workspace/api-client-r
 import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function Blog() {
+  const language = useSiteLanguage();
+  const t: Record<SiteLanguage, Record<string, string>> = {
+    en: {
+      heading: "Insights & Perspectives",
+      title: "The Journal",
+      heroSub:
+        "Market analysis, investment strategy, ownership guidance, and on-the-ground reporting from one of Asia's most dynamic property markets. Our journal covers what serious buyers actually need to know — from zoning shifts and developer due diligence to area deep-dives and emerging investment zones.\n\nRead, watch, and decide with clarity.",
+      all: "All",
+      empty: "No articles in this category",
+      minRead: "min read",
+    },
+    id: {
+      heading: "Insight & Perspektif",
+      title: "Jurnal",
+      heroSub:
+        "Analisis pasar, strategi investasi, panduan kepemilikan, dan pelaporan lapangan dari salah satu pasar properti paling dinamis di Asia. Jurnal kami membahas hal yang benar-benar dibutuhkan pembeli serius — dari perubahan zonasi dan uji tuntas pengembang hingga kajian mendalam kawasan dan zona investasi baru.\n\nBaca, tonton, dan putuskan dengan jelas.",
+      all: "Semua",
+      empty: "Tidak ada artikel di kategori ini",
+      minRead: "mnt baca",
+    },
+    fr: {
+      heading: "Analyses & Perspectives",
+      title: "Le Journal",
+      heroSub:
+        "Analyse de marche, strategie d'investissement, conseils sur la propriete et reportages sur le terrain dans l'un des marches immobiliers les plus dynamiques d'Asie. Notre journal aborde ce dont les acheteurs exigeants ont vraiment besoin — evolutions de zonage, due diligence promoteurs, plongees par quartier et zones emergentes.\n\nLisez, regardez et decidez en toute clarte.",
+      all: "Tous",
+      empty: "Aucun article dans cette categorie",
+      minRead: "min lecture",
+    },
+    zh: {
+      heading: "洞察与观点",
+      title: "专栏",
+      heroSub:
+        "市场分析、投资策略、产权指引与一线报道，聚焦亚洲最具活力的房地产市场之一。专栏深入探讨认真买家真正需要了解的内容——从规划调整、开发商尽调到区域深度解析与新兴投资板块。\n\n阅读、观看，清晰决策。",
+      all: "全部",
+      empty: "该分类下暂无文章",
+      minRead: "分钟阅读",
+    },
+    tr: {
+      heading: "Icgoruler ve Perspektifler",
+      title: "Blog",
+      heroSub:
+        "Pazar analizi, yatirim stratejisi, mulkiyet rehberligi ve Asya'nin en dinamik gayrimenkul pazarlarindan birinde sahadan haberler. Gunlugumuz ciddi alicilarin gercekten bilmesi gerekenleri ele alir — imar degisiklikleri ve gelistirici due diligence'tan bolge derinlemesine incelemelerine ve yukselen yatirim bolgelerine kadar.\n\nOkuyun, izleyin ve net karar verin.",
+      all: "Tum",
+      empty: "Bu kategoride makale yok",
+      minRead: "dk okuma",
+    },
+  }[language];
   const [activeCategory, setActiveCategory] = useState<string>("");
   const { data, isLoading } = useListBlogPosts({ limit: 20 });
   const { data: catData } = useListBlogCategories();
@@ -22,29 +71,49 @@ export default function Blog() {
       <Seo
         title="Journal · Bali property insights"
         description={truncateForMeta(
-          "Guides and perspectives on luxury Bali real estate, investment, and lifestyle from the 8 Degree team.",
+          "Market analysis, investment strategy, ownership guidance, and on-the-ground reporting from one of Asia's most dynamic property markets.",
         )}
         path="/blog"
       />
-      <div className="bg-foreground text-background pt-32 pb-16 px-6">
-        <div className="container mx-auto max-w-6xl">
+      <section className="relative w-full overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 min-h-[min(72dvh,720px)] overflow-hidden">
+          <div className="absolute inset-0 z-10 bg-black/45" aria-hidden />
+          <img
+            src="/site-media/journal-hero.png"
+            alt=""
+            className="hero-image-breathe h-full min-h-[min(72dvh,720px)] w-full object-cover object-center"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+        <div className="relative z-20 mx-auto flex min-h-[min(72dvh,720px)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center text-white md:py-28">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs tracking-[0.3em] uppercase text-primary mb-4"
+            className="mb-4 w-full text-xs font-medium uppercase tracking-[0.28em] text-white/90"
           >
-            Insights & Perspectives
+            {t.heading}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-serif text-4xl md:text-6xl leading-tight"
+            className="mx-auto max-w-4xl font-serif text-4xl font-bold leading-tight tracking-[0.04em] md:text-6xl"
           >
-            The Journal
+            {t.title}
           </motion.h1>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mx-auto mt-6 w-full max-w-3xl space-y-4 text-sm font-light leading-relaxed text-white/90 md:text-base"
+          >
+            {t.heroSub.split("\n\n").map((paragraph, idx) => (
+              <p key={idx}>{paragraph}</p>
+            ))}
+          </motion.div>
         </div>
-      </div>
+      </section>
 
       <div className="container mx-auto max-w-6xl px-6 py-12">
         {/* Category Filter */}
@@ -54,7 +123,7 @@ export default function Blog() {
             className={`text-xs tracking-[0.2em] uppercase px-4 py-2 border transition-colors ${!activeCategory ? 'bg-foreground text-background border-foreground' : 'border-border hover:border-foreground'}`}
             data-testid="button-cat-all"
           >
-            All
+            {t.all}
           </button>
           {categories.map(cat => (
             <button
@@ -80,7 +149,7 @@ export default function Blog() {
           </div>
         ) : posts.length === 0 ? (
           <div className="text-center py-24 text-muted-foreground">
-            <p className="font-serif text-2xl">No articles in this category</p>
+            <p className="font-serif text-2xl text-primary">{t.empty}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -112,9 +181,9 @@ export default function Blog() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                       <span className="flex items-center gap-1"><User size={10} /> {post.author}</span>
-                      <span className="flex items-center gap-1"><Clock size={10} /> {post.readingTime} min read</span>
+                      <span className="flex items-center gap-1"><Clock size={10} /> {post.readingTime} {t.minRead}</span>
                     </div>
-                    <h3 className="font-serif text-xl leading-snug group-hover:text-primary transition-colors mb-2">
+                    <h3 className="font-serif text-xl leading-snug text-primary transition-colors group-hover:text-primary/80 mb-2">
                       {post.title}
                     </h3>
                     <p className="text-muted-foreground text-sm line-clamp-3">{post.excerpt}</p>

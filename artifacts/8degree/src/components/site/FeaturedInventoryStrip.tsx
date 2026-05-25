@@ -1,132 +1,149 @@
-import { motion } from "framer-motion";
+import { useMemo } from "react";
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
+import type { PropertyInventoryListing } from "@workspace/api-client-react";
 import { useListInventoryListings } from "@workspace/api-client-react";
-import { inferListingArea, listingPriceLine, listingShortBlurb } from "@/lib/portfolio-listing";
+import {
+  HOME_FEATURED_LISTINGS_MODE,
+  HOME_FEATURED_LISTINGS_TEMPLATE,
+  type HomeFeaturedListingTemplate,
+} from "@/data/home-featured-listings-template";
+import { HOME_LISTINGS_BAND } from "@/lib/home-section-surfaces";
+import {
+  FeaturedListingCard,
+  inventoryRowToFeaturedModel,
+  type FeaturedCardModel,
+} from "@/components/site/highlighted-listing-card";
 
-const HOMEPAGE_FEATURED_SLOTS = 2;
-const EDITORIAL_BG = "#F4EFE8";
-const INK = "#1c1917";
+const DEFAULT_GRID_SLOTS = 6;
 
-/** Same visual height for both images when shown as a pair (px values must match for the square). */
-const PAIR_IMAGE_HEIGHT =
-  "lg:h-[clamp(220px,38vw,500px)] lg:min-h-[220px] lg:max-h-[500px] lg:w-[clamp(220px,38vw,500px)]";
-const PAIR_RECT_HEIGHT = "lg:h-[clamp(220px,38vw,500px)] lg:min-h-[220px] lg:max-h-[500px]";
+const sectionSurface = {
+  overlapHero: "-mt-4 pt-3 pb-14 md:-mt-6 md:pt-4 md:pb-20 lg:pt-5",
+  /** After a full-bleed hero (e.g. projects page): no negative overlap. */
+  standalone: "pt-10 pb-14 md:pt-12 md:pb-20",
+} as const;
 
-export function FeaturedInventoryStrip() {
-  const { data, isLoading, isError } = useListInventoryListings({
-    channel: "website",
-    limit: 200,
-    offset: 0,
-  });
+export type FeaturedInventoryStripProps = {
+  title: string;
+  subtitle: string;
+  viewAllLabel: string;
+  /** Defaults to `/projects`. Use `#anchor` for in-page jumps on the projects page. */
+  viewAllHref?: string;
+  /** `overlapHero` tucks under the homepage hero; `standalone` is for the Bali properties page. */
+  sectionVariant?: keyof typeof sectionSurface;
+  /** When true, the section title and subtitle are not rendered (e.g. projects page). Homepage omits this. */
+  hideHeading?: boolean;
+  /** Max cards to show (homepage uses default 6; projects strip uses 9 for a 3×3 grid). */
+  maxCards?: number;
+  /** Section background (homepage default: listings band). */
+  sectionBackgroundColor?: string;
+};
 
-  if (isLoading || isError || !data?.listings?.length) return null;
+function templateToCard(t: HomeFeaturedListingTemplate, idx: number): FeaturedCardModel {
+  const showGreatDeal =
+    t.showGreatDeal !== undefined ? t.showGreatDeal : Boolean(t.featured) || idx >= 2;
+  return {
+    id: t.id,
+    href: t.href,
+    code: t.code,
+    title: t.title,
+    imageUrl: t.imageUrl,
+    imageAlt: t.title,
+    area: t.location,
+    priceDisplay: t.priceDisplay,
+    ownership: t.ownership,
+    bedrooms: t.bedrooms,
+    buildingSqm: t.buildingSqm?.trim() ? t.buildingSqm : null,
+    landSqm: t.landSqm?.trim() ? t.landSqm : null,
+    leaseYears: t.leaseYears?.trim() ? t.leaseYears : null,
+    featured: Boolean(t.featured),
+    categoryLabel: t.category ?? "Residential",
+    showGreatDeal,
+    externalListingUrl: null,
+  };
+}
 
-  const eligible = data.listings.filter((row) => {
-    const vis = row.visibility ?? "active";
-    const sale = row.saleStatus ?? "available";
-    return vis === "active" && sale !== "sold";
-  });
+const viewAllCtaClassName =
+  "group inline-flex items-center gap-2 rounded-full border border-[#1c1917]/25 bg-white/80 px-6 py-3 text-xs font-medium uppercase tracking-[0.28em] text-primary shadow-sm backdrop-blur-sm transition-colors hover:border-[#01514E] hover:bg-white";
 
-  if (eligible.length === 0) return null;
+export function FeaturedInventoryStrip({
+  title,
+  subtitle,
+  viewAllLabel,
+  viewAllHref = "/projects",
+  sectionVariant = "overlapHero",
+  hideHeading = false,
+  maxCards = DEFAULT_GRID_SLOTS,
+  sectionBackgroundColor = HOME_LISTINGS_BAND,
+}: FeaturedInventoryStripProps) {
+  const slots = Math.max(1, Math.min(maxCards, 24));
+  const useApi = HOME_FEATURED_LISTINGS_MODE === "api";
 
-  const rows = [...eligible]
-    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
-    .slice(0, HOMEPAGE_FEATURED_SLOTS);
+  const { data, isError } = useListInventoryListings(
+    { channel: "website", limit: 200, offset: 0 },
+    { query: { enabled: useApi } },
+  );
 
-  const thumb = (row: (typeof rows)[0]) =>
-    (Array.isArray(row.imageUrls) && row.imageUrls.length > 0 ? row.imageUrls[0] : row.imageUrl) ?? null;
+  const cards = useMemo((): FeaturedCardModel[] => {
+    const templateCards = HOME_FEATURED_LISTINGS_TEMPLATE.slice(0, slots).map(templateToCard);
 
-  const isPair = rows.length === 2;
+    if (!useApi || isError || !data?.listings?.length) {
+      return templateCards;
+    }
+
+    const eligible = data.listings.filter((row) => {
+      const vis = row.visibility ?? "active";
+      const sale = row.saleStatus ?? "available";
+      return vis !== "draft" && sale !== "sold";
+    });
+
+    if (eligible.length === 0) {
+      return templateCards;
+    }
+
+    return [...eligible]
+      .sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
+      .slice(0, slots)
+      .map((row: PropertyInventoryListing, idx: number) => inventoryRowToFeaturedModel(row, idx));
+  }, [useApi, data, isError, slots]);
+
+  if (cards.length === 0) return null;
 
   return (
-    <section className="py-20 md:py-28" style={{ backgroundColor: EDITORIAL_BG, color: INK }}>
-      <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-14">
-        <div className="mb-16 flex flex-col justify-between gap-8 md:mb-20 md:flex-row md:items-end">
-          <div className="max-w-xl">
-            <p className="mb-4 font-sans text-[10px] font-medium uppercase tracking-[0.28em] text-[#1c1917]/50 md:text-[11px]">
-              Featured listings
-            </p>
-            <h2 className="font-serif text-3xl font-normal leading-[1.12] tracking-tight text-[#1c1917] md:text-4xl lg:text-[2.75rem]">
-              Hand-picked opportunities on the site right now.
+    <section
+      className={sectionSurface[sectionVariant]}
+      style={{ backgroundColor: sectionBackgroundColor }}
+    >
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 md:px-10">
+        {hideHeading ? null : (
+          <div className="mb-10 mx-auto max-w-2xl text-center md:mb-14">
+            <h2 className="font-serif text-3xl font-bold uppercase tracking-[0.06em] text-primary md:text-4xl lg:text-[2.35rem]">
+              {title}
             </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#1c1917]/70 md:text-base">
+              {subtitle}
+            </p>
           </div>
-          <Link
-            href="/projects"
-            className="group inline-flex shrink-0 items-center gap-2 self-start font-sans text-[10px] font-medium uppercase tracking-[0.22em] text-[#1c1917] underline-offset-[6px] transition-opacity hover:opacity-70 md:self-end md:text-[11px]"
-          >
-            Full portfolio
-            <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-          </Link>
+        )}
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+          {cards.map((row, idx) => (
+            <FeaturedListingCard key={row.id} model={row} idx={idx} />
+          ))}
         </div>
 
-        <div
-          className={
-            isPair
-              ? "flex flex-col gap-14 lg:flex-row lg:items-start lg:gap-12 xl:gap-16 2xl:gap-20"
-              : "mx-auto max-w-3xl"
-          }
-        >
-          {rows.map((row, idx) => {
-            const img = thumb(row);
-            const area = inferListingArea(row.title, row.description);
-            const label = row.featured ? "Featured" : "Spotlight";
-            const isLeft = idx === 0;
-
-            const imageShell =
-              isPair && isLeft
-                ? `overflow-hidden bg-[#e8e2da] aspect-[4/3] w-full sm:aspect-[16/10] lg:aspect-auto lg:w-full lg:min-w-0 ${PAIR_RECT_HEIGHT}`
-                : isPair && !isLeft
-                  ? `overflow-hidden bg-[#e8e2da] aspect-square mx-auto w-[min(100%,22rem)] sm:w-[min(100%,26rem)] lg:mx-0 lg:aspect-auto lg:max-w-none lg:shrink-0 ${PAIR_IMAGE_HEIGHT}`
-                  : "overflow-hidden bg-[#e8e2da] aspect-[16/10] w-full sm:aspect-[2/1]";
-
-            const articleClass =
-              isPair && isLeft ? "min-w-0 lg:flex-[1.65] lg:basis-0" : isPair && !isLeft ? "lg:shrink-0" : "";
-
-            return (
-              <motion.article
-                key={row.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.55, delay: Math.min(idx * 0.08, 0.28) }}
-                className={articleClass}
-              >
-                <Link href={`/properties/${encodeURIComponent(row.code)}`} className="group block">
-                  <div className={imageShell}>
-                    {img ? (
-                      <img
-                        src={img}
-                        alt={row.title || row.code}
-                        className="h-full w-full object-cover transition-[transform,opacity] duration-[1s] ease-out group-hover:scale-[1.02] group-hover:opacity-[0.94]"
-                        decoding="async"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#e8e2da] to-[#ddd4c8] font-serif text-sm text-[#1c1917]/35">
-                        {row.code}
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="mt-8 font-sans text-[10px] font-medium uppercase tracking-[0.26em] text-[#1c1917]/50 md:mt-10 md:text-[11px]">
-                    {label}
-                    {area ? ` · ${area.toUpperCase()}` : ""}
-                  </p>
-                  <h3 className="mt-4 max-w-lg font-serif text-2xl font-normal leading-snug tracking-tight text-[#1c1917] transition-colors group-hover:text-[#1c1917]/80 md:text-3xl lg:text-[2rem]">
-                    {row.title || row.code}
-                  </h3>
-                  <p className="mt-5 max-w-lg font-sans text-sm font-normal leading-relaxed text-[#1c1917]/70 md:text-[15px]">
-                    {listingShortBlurb(row.description)}
-                  </p>
-                  <p className="mt-6 font-sans text-[10px] uppercase tracking-[0.2em] text-[#1c1917]/45 md:text-[11px]">
-                    {listingPriceLine(row.description)}
-                  </p>
-                </Link>
-              </motion.article>
-            );
-          })}
+        <div className="mt-10 flex justify-center md:mt-14">
+          {viewAllHref.startsWith("#") ? (
+            <a href={viewAllHref} className={viewAllCtaClassName}>
+              {viewAllLabel}
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </a>
+          ) : (
+            <Link href={viewAllHref} className={viewAllCtaClassName}>
+              {viewAllLabel}
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </Link>
+          )}
         </div>
       </div>
     </section>

@@ -137,7 +137,7 @@ export function InventoryImportPanel({ onSuccess }: Props) {
             <code className="text-xs">code</code> to update.
           </p>
           <Textarea
-            className="min-h-[280px] max-h-[45vh] font-mono text-xs shrink-0"
+            className="min-h-[280px] max-h-[45vh] font-sans text-xs shrink-0"
             value={crmPayload}
             onChange={(e) => setCrmPayload(e.target.value)}
           />
@@ -150,7 +150,7 @@ export function InventoryImportPanel({ onSuccess }: Props) {
         <>
           <p className="text-sm text-muted-foreground shrink-0">Creates one development plus optional units (original flow).</p>
           <Textarea
-            className="min-h-[280px] max-h-[45vh] font-mono text-xs shrink-0"
+            className="min-h-[280px] max-h-[45vh] font-sans text-xs shrink-0"
             value={projectPayload}
             onChange={(e) => setProjectPayload(e.target.value)}
           />

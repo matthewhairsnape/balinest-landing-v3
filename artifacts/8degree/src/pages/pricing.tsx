@@ -8,8 +8,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function Pricing() {
+  const language = useSiteLanguage();
+  const t: Record<SiteLanguage, Record<string, string>> = {
+    en: { eyebrow: "Request Pricing", title: "Get Full Pricing Details", subtitle: "We share detailed pricing, payment plans, and availability directly with qualified investors. Complete the form and our team will be in touch within 24 hours.", fullName: "Full Name *", email: "Email Address *", phone: "Phone / WhatsApp", country: "Country", selectDev: "Select a development (optional)", budget: "Investment Budget", message: "Any specific questions about pricing, payment plans, or availability...", request: "Request Pricing", sending: "Sending...", note: "We respond to every pricing enquiry within one business day." },
+    id: { eyebrow: "Minta Harga", title: "Dapatkan Detail Harga Lengkap", subtitle: "Kami membagikan detail harga, skema pembayaran, dan ketersediaan kepada investor yang memenuhi syarat.", fullName: "Nama Lengkap *", email: "Alamat Email *", phone: "Telepon / WhatsApp", country: "Negara", selectDev: "Pilih pengembangan (opsional)", budget: "Anggaran Investasi", message: "Pertanyaan terkait harga, skema pembayaran, atau ketersediaan...", request: "Minta Harga", sending: "Mengirim...", note: "Kami merespons setiap permintaan harga dalam satu hari kerja." },
+    fr: { eyebrow: "Demande de Prix", title: "Obtenir les Details de Prix", subtitle: "Nous partageons les prix, plans de paiement et disponibilites avec les investisseurs qualifies.", fullName: "Nom complet *", email: "Adresse e-mail *", phone: "Telephone / WhatsApp", country: "Pays", selectDev: "Selectionner un projet (optionnel)", budget: "Budget d'Investissement", message: "Questions sur les prix, paiements ou disponibilites...", request: "Demander le Prix", sending: "Envoi...", note: "Nous repondons a chaque demande sous un jour ouvrable." },
+    zh: { eyebrow: "申请报价", title: "获取完整价格详情", subtitle: "我们将向合格投资者提供价格、付款方案和库存信息。", fullName: "姓名 *", email: "邮箱地址 *", phone: "电话 / WhatsApp", country: "国家", selectDev: "选择项目（可选）", budget: "投资预算", message: "关于价格、付款计划或库存的具体问题...", request: "申请报价", sending: "发送中...", note: "我们会在一个工作日内回复您的报价请求。" },
+    tr: { eyebrow: "Fiyat Talebi", title: "Tum Fiyat Detaylarini Alin", subtitle: "Nitelikli yatirimcilar icin fiyat, odeme plani ve uygunluk bilgisini paylasiyoruz.", fullName: "Ad Soyad *", email: "E-posta *", phone: "Telefon / WhatsApp", country: "Ulke", selectDev: "Proje secin (opsiyonel)", budget: "Yatirim Butcesi", message: "Fiyat, odeme plani veya uygunluk hakkinda sorular...", request: "Fiyat Talep Et", sending: "Gonderiliyor...", note: "Her fiyat talebine bir is gunu icinde donuyoruz." },
+  }[language];
   const { data } = useListProjects({ status: "ongoing", limit: 10 });
   const projects = data?.projects ?? [];
   const createEnquiry = useCreateEnquiry();
@@ -56,7 +65,7 @@ export default function Pricing() {
             animate={{ opacity: 1, y: 0 }}
             className="text-xs tracking-[0.3em] uppercase text-primary mb-4"
           >
-            Request Pricing
+            {t.eyebrow}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -64,7 +73,7 @@ export default function Pricing() {
             transition={{ delay: 0.1 }}
             className="font-serif text-4xl md:text-6xl leading-tight mb-6"
           >
-            Get Full Pricing Details
+            {t.title}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -72,7 +81,7 @@ export default function Pricing() {
             transition={{ delay: 0.2 }}
             className="text-background/70 max-w-xl mx-auto"
           >
-            We share detailed pricing, payment plans, and availability directly with qualified investors. Complete the form and our team will be in touch within 24 hours.
+            {t.subtitle}
           </motion.p>
         </div>
       </div>
@@ -81,13 +90,13 @@ export default function Pricing() {
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <Input
-              placeholder="Full Name *"
+              placeholder={t.fullName}
               {...form.register("name", { required: true })}
               className="rounded-none"
               data-testid="input-name"
             />
             <Input
-              placeholder="Email Address *"
+              placeholder={t.email}
               type="email"
               {...form.register("email", { required: true })}
               className="rounded-none"
@@ -96,13 +105,13 @@ export default function Pricing() {
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <Input
-              placeholder="Phone / WhatsApp"
+              placeholder={t.phone}
               {...form.register("phone")}
               className="rounded-none"
               data-testid="input-phone"
             />
             <Input
-              placeholder="Country"
+              placeholder={t.country}
               {...form.register("country")}
               className="rounded-none"
               data-testid="input-country"
@@ -110,7 +119,7 @@ export default function Pricing() {
           </div>
           <Select onValueChange={(v) => form.setValue("projectId", v)}>
             <SelectTrigger className="rounded-none" data-testid="select-project">
-              <SelectValue placeholder="Select a development (optional)" />
+              <SelectValue placeholder={t.selectDev} />
             </SelectTrigger>
             <SelectContent>
               {projects.map(p => (
@@ -120,7 +129,7 @@ export default function Pricing() {
           </Select>
           <Select onValueChange={(v) => form.setValue("budgetRange", v)}>
             <SelectTrigger className="rounded-none" data-testid="select-budget">
-              <SelectValue placeholder="Investment Budget" />
+              <SelectValue placeholder={t.budget} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Under $300,000">Under $300,000</SelectItem>
@@ -131,7 +140,7 @@ export default function Pricing() {
             </SelectContent>
           </Select>
           <Textarea
-            placeholder="Any specific questions about pricing, payment plans, or availability..."
+            placeholder={t.message}
             {...form.register("message")}
             className="rounded-none resize-none h-32"
             data-testid="textarea-message"
@@ -142,10 +151,10 @@ export default function Pricing() {
             disabled={createEnquiry.isPending}
             data-testid="button-submit"
           >
-            {createEnquiry.isPending ? "Sending..." : "Request Pricing"}
+            {createEnquiry.isPending ? t.sending : t.request}
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            We respond to every pricing enquiry within one business day.
+            {t.note}
           </p>
         </form>
       </div>

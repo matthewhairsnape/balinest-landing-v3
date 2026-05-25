@@ -4,8 +4,17 @@ import { MapPin, CheckCircle } from "lucide-react";
 import { useListProjects } from "@workspace/api-client-react";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function CompletedProjects() {
+  const language = useSiteLanguage();
+  const t: Record<SiteLanguage, Record<string, string>> = {
+    en: { track: "Track Record", title: "Completed Developments", empty: "No completed projects yet.", view: "View Development" },
+    id: { track: "Rekam Jejak", title: "Pengembangan Selesai", empty: "Belum ada proyek selesai.", view: "Lihat Pengembangan" },
+    fr: { track: "Historique", title: "Developpements Livres", empty: "Aucun projet livre pour le moment.", view: "Voir le Projet" },
+    zh: { track: "业绩记录", title: "已完成项目", empty: "暂无已完成项目。", view: "查看项目" },
+    tr: { track: "Gecmis Performans", title: "Tamamlanan Projeler", empty: "Henuz tamamlanan proje yok.", view: "Projeyi Gor" },
+  }[language];
   const { data, isLoading } = useListProjects({ status: "completed", limit: 20 });
   const projects = data?.projects ?? [];
 
@@ -25,7 +34,7 @@ export default function CompletedProjects() {
             animate={{ opacity: 1, y: 0 }}
             className="text-xs tracking-[0.3em] uppercase text-primary mb-4"
           >
-            Track Record
+            {t.track}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -33,7 +42,7 @@ export default function CompletedProjects() {
             transition={{ delay: 0.1 }}
             className="font-serif text-4xl md:text-6xl leading-tight"
           >
-            Completed Developments
+            {t.title}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -52,7 +61,7 @@ export default function CompletedProjects() {
             {[1, 2].map(i => <div key={i} className="h-72 bg-muted animate-pulse" />)}
           </div>
         ) : projects.length === 0 ? (
-          <p className="text-center text-muted-foreground py-24 font-serif text-2xl">No completed projects yet.</p>
+          <p className="text-center py-24 font-serif text-2xl text-primary">{t.empty}</p>
         ) : (
           <div className="space-y-16">
             {projects.map((project, i) => (
@@ -88,10 +97,10 @@ export default function CompletedProjects() {
                         <MapPin size={10} />
                         {project.area} · {project.propertyType}
                       </div>
-                      <h2 className="font-serif text-3xl md:text-4xl mb-4 group-hover:text-primary transition-colors">{project.title}</h2>
+                      <h2 className="font-serif text-3xl md:text-4xl mb-4 text-primary transition-colors group-hover:text-primary/80">{project.title}</h2>
                       <p className="text-muted-foreground leading-relaxed mb-6">{project.shortDescription}</p>
                       <div className="pt-4 border-t border-border">
-                        <span className="text-xs tracking-[0.2em] uppercase text-primary font-medium">View Development</span>
+                        <span className="text-xs tracking-[0.2em] uppercase text-primary font-medium">{t.view}</span>
                       </div>
                     </div>
                   </div>

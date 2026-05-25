@@ -210,7 +210,7 @@ export default function AdminProjects() {
               <tbody>
                 {websiteRows.map((r) => (
                   <tr key={r.id} className="border-b border-border/40">
-                    <td className="py-2 px-3 font-mono text-xs">{r.code}</td>
+                    <td className="py-2 px-3 font-sans text-xs">{r.code}</td>
                     <td className="py-2 px-3">{r.title}</td>
                     <td className="py-2 px-3 text-muted-foreground text-xs truncate max-w-[200px]">
                       {r.listingUrl ? (
@@ -243,7 +243,7 @@ export default function AdminProjects() {
               <tbody>
                 {silentRows.map((r) => (
                   <tr key={r.id} className="border-b border-border/40">
-                    <td className="py-2 px-3 font-mono text-xs">{r.code}</td>
+                    <td className="py-2 px-3 font-sans text-xs">{r.code}</td>
                     <td className="py-2 px-3">{r.title}</td>
                   </tr>
                 ))}

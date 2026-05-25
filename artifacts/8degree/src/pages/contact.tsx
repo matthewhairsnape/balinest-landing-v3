@@ -9,8 +9,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
+
+const CONTACT_COPY: Record<SiteLanguage, Record<string, string>> = {
+  en: { letsTalk: "Let's Talk", getInTouch: "Get in Touch", chat: "Chat on WhatsApp", send: "Send Message", sending: "Sending...", budget: "Investment Budget" },
+  id: { letsTalk: "Mari Bicara", getInTouch: "Hubungi Kami", chat: "Chat di WhatsApp", send: "Kirim Pesan", sending: "Mengirim...", budget: "Anggaran Investasi" },
+  fr: { letsTalk: "Parlons", getInTouch: "Contactez-nous", chat: "Chat WhatsApp", send: "Envoyer", sending: "Envoi...", budget: "Budget d'Investissement" },
+  zh: { letsTalk: "联系我们", getInTouch: "立即咨询", chat: "WhatsApp 咨询", send: "发送信息", sending: "发送中...", budget: "投资预算" },
+  tr: { letsTalk: "Konusalim", getInTouch: "Iletisime Gecin", chat: "WhatsApp'ta Sohbet", send: "Mesaj Gonder", sending: "Gonderiliyor...", budget: "Yatirim Butcesi" },
+};
 
 export default function Contact() {
+  const language = useSiteLanguage();
+  const t = CONTACT_COPY[language];
   const createEnquiry = useCreateEnquiry();
   const { toast } = useToast();
 
@@ -61,7 +72,7 @@ export default function Contact() {
             animate={{ opacity: 1, y: 0 }}
             className="text-xs tracking-[0.3em] uppercase text-primary mb-4"
           >
-            Let's Talk
+            {t.letsTalk}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -69,7 +80,7 @@ export default function Contact() {
             transition={{ delay: 0.1 }}
             className="font-serif text-4xl md:text-6xl leading-tight"
           >
-            Get in Touch
+            {t.getInTouch}
           </motion.h1>
         </div>
       </div>
@@ -102,7 +113,7 @@ export default function Contact() {
               >
                 <Button className="w-full rounded-none tracking-widest uppercase h-12" data-testid="button-whatsapp-contact">
                   <MessageCircle size={16} className="mr-2" />
-                  Chat on WhatsApp
+                  {t.chat}
                 </Button>
               </a>
             </div>
@@ -142,7 +153,7 @@ export default function Contact() {
               </div>
               <Select onValueChange={(v) => form.setValue("budgetRange", v)}>
                 <SelectTrigger className="rounded-none w-full" data-testid="select-budget">
-                  <SelectValue placeholder="Investment Budget" />
+                  <SelectValue placeholder={t.budget} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Under $300,000">Under $300,000</SelectItem>
@@ -164,7 +175,7 @@ export default function Contact() {
                 disabled={createEnquiry.isPending}
                 data-testid="button-submit"
               >
-                {createEnquiry.isPending ? "Sending..." : "Send Message"}
+                {createEnquiry.isPending ? t.sending : t.send}
               </Button>
               <p className="text-xs text-muted-foreground text-center">
                 We respond to every enquiry within one business day.

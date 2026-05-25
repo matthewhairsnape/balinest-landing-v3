@@ -8,8 +8,17 @@ import { Fragment, useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Seo } from "@/components/site/Seo";
 import { canonicalUrl, jsonLdGraph, organizationJsonLdNode, truncateForMeta } from "@/lib/site-seo";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function BlogDetail() {
+  const language = useSiteLanguage();
+  const t: Record<SiteLanguage, Record<string, string>> = {
+    en: { back: "Back to Journal", ready: "Ready to Invest?", guide: "Download Our Investment Guide", yourName: "Your name", email: "Email address", getGuide: "Get the Guide", related: "Further Reading", minRead: "min read" },
+    id: { back: "Kembali ke Jurnal", ready: "Siap Berinvestasi?", guide: "Unduh Panduan Investasi", yourName: "Nama Anda", email: "Alamat email", getGuide: "Dapatkan Panduan", related: "Bacaan Lanjutan", minRead: "mnt baca" },
+    fr: { back: "Retour au Journal", ready: "Pret a investir?", guide: "Telecharger le Guide", yourName: "Votre nom", email: "Adresse e-mail", getGuide: "Obtenir le Guide", related: "Lectures Complements", minRead: "min lecture" },
+    zh: { back: "返回专栏", ready: "准备投资了吗？", guide: "下载投资指南", yourName: "您的姓名", email: "邮箱地址", getGuide: "获取指南", related: "延伸阅读", minRead: "分钟阅读" },
+    tr: { back: "Bloga Don", ready: "Yatirima Hazir misiniz?", guide: "Yatirim Rehberini Indir", yourName: "Adiniz", email: "E-posta", getGuide: "Rehberi Al", related: "Daha Fazla Okuma", minRead: "dk okuma" },
+  }[language];
   const [, params] = useRoute("/blog/:slug");
   const slug = params?.slug ?? "";
   const [email, setEmail] = useState("");
@@ -113,16 +122,16 @@ export default function BlogDetail() {
         >
           <Link href="/blog">
             <button className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm tracking-wide mb-6">
-              <ArrowLeft size={14} /> Back to Journal
+              <ArrowLeft size={14} /> {t.back}
             </button>
           </Link>
           {post.categoryName && (
             <span className="text-xs tracking-[0.3em] uppercase text-primary">{post.categoryName}</span>
           )}
-          <h1 className="font-serif text-3xl md:text-4xl mt-3 mb-5 leading-tight">{post.title}</h1>
+          <h1 className="font-serif text-3xl md:text-4xl mt-3 mb-5 leading-tight text-primary">{post.title}</h1>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><User size={12} /> {post.author}</span>
-            <span className="flex items-center gap-1"><Clock size={12} /> {post.readingTime} min read</span>
+            <span className="flex items-center gap-1"><Clock size={12} /> {post.readingTime} {t.minRead}</span>
             {post.publishedAt && (
               <span>{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
             )}
@@ -140,19 +149,19 @@ export default function BlogDetail() {
 
         {/* CTA Block */}
         <div className="bg-foreground text-background p-8 md:p-12 mb-16">
-          <p className="text-xs tracking-[0.3em] uppercase text-primary mb-3">Ready to Invest?</p>
-          <h2 className="font-serif text-2xl mb-4">Download Our Investment Guide</h2>
+          <p className="text-xs tracking-[0.3em] uppercase text-primary mb-3">{t.ready}</p>
+          <h2 className="font-serif text-2xl mb-4 text-primary">{t.guide}</h2>
           <p className="text-background/70 mb-6 text-sm">Everything you need to know about investing in luxury Bali property. Delivered to your inbox.</p>
           <form onSubmit={handleCtaSubmit} className="flex flex-col sm:flex-row gap-3">
             <Input
-              placeholder="Your name"
+              placeholder={t.yourName}
               value={name}
               onChange={e => setName(e.target.value)}
               className="rounded-none bg-background/10 border-background/20 text-background placeholder:text-background/50 flex-1"
               data-testid="input-cta-name"
             />
             <Input
-              placeholder="Email address"
+              placeholder={t.email}
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -166,7 +175,7 @@ export default function BlogDetail() {
               disabled={createEnquiry.isPending}
               data-testid="button-cta-submit"
             >
-              Get the Guide
+              {t.getGuide}
             </Button>
           </form>
         </div>
@@ -174,7 +183,7 @@ export default function BlogDetail() {
         {/* Related Articles */}
         {related.length > 0 && (
           <div className="border-t border-border pt-12 pb-16">
-            <h2 className="font-serif text-2xl mb-8">Further Reading</h2>
+            <h2 className="font-serif text-2xl mb-8 text-primary">{t.related}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {related.map(p => (
                 <Link key={p.id} href={`/blog/${p.slug}`}>

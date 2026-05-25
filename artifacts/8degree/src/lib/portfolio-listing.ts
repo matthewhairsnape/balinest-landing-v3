@@ -60,3 +60,13 @@ export function inferListingStatus(description: string): string {
   if (/\bcoming soon\b|pre[-\s]?launch\b/.test(d)) return "Coming soon";
   return "Active";
 }
+
+/** E.g. "30 Years" for marketing copy; used on listing cards. */
+export function inferLeaseYearsLabel(description: string): string | null {
+  const d = description.slice(0, 2800);
+  const m = d.match(/\b(\d+)\s*(?:years?|yrs?)\b(?:\s*(?:lease|remaining))?/i);
+  if (m) return `${m[1]} Years`;
+  const m2 = d.match(/(\d+)\s*(?:years?|yrs?)\s*leasehold/i);
+  if (m2) return `${m2[1]} Years`;
+  return null;
+}

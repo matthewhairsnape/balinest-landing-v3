@@ -1,55 +1,94 @@
-import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, MapPin, Search } from "lucide-react";
 import { useListInventoryListings, useListProjects } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  inferBedroomsBucket,
-  inferListingArea,
-  listingPriceLine,
-  listingShortBlurb,
-} from "@/lib/portfolio-listing";
+import { inferBedroomsBucket, inferListingArea } from "@/lib/portfolio-listing";
 import { Seo } from "@/components/site/Seo";
+import { FeaturedInventoryStrip } from "@/components/site/FeaturedInventoryStrip";
+import { PropertySearchPanel, type PropertySearchApplyPayload } from "@/components/site/PropertySearchPanel";
+import { HOME_COPY } from "@/lib/i18n/home-copy";
 import { truncateForMeta } from "@/lib/site-seo";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
+import { BALI_PROPERTIES_PAGE_SURFACE } from "@/lib/home-section-surfaces";
+import { cn } from "@/lib/utils";
+import {
+  FeaturedListingCard,
+  HIGHLIGHTED_CARD_BRAND,
+  developmentProjectToFeaturedModel,
+  inventoryRowToFeaturedModel,
+  type FeaturedCardModel,
+} from "@/components/site/highlighted-listing-card";
 
 /** Stable empty list so `useMemo` deps do not churn when a request fails. */
 const EMPTY_LIST: [] = [];
 
-type MergedCard =
-  | {
-      kind: "project";
-      id: string;
-      slug: string;
-      title: string;
-      area: string;
-      shortDescription: string;
-      priceLine: string;
-      heroImageUrl: string | null;
-      featured: boolean;
-      unitsLeft: number | null;
-      completionDate: string | null;
-    }
-  | {
-      kind: "listing";
-      id: string;
-      code: string;
-      title: string;
-      area: string;
-      shortDescription: string;
-      priceLine: string;
-      listingUrl: string | null;
-      imageUrl: string | null;
-      featured: boolean;
-    };
+const LISTINGS_PAGE_SIZE = 9;
 
 export default function Projects() {
+  const language = useSiteLanguage();
+  const t = useMemo(() => {
+    const map: Record<SiteLanguage, Record<string, string>> = {
+      en: {
+        portfolio: "Portfolio",
+        title: "Bali Properties for Sale",
+        heroSub:
+          "Explore a curated selection of villas, developments, and land across Bali's most sought-after locations. Refine your search below to view available listings.",
+        search: "Search by name, code, or area...",
+        clear: "Clear",
+        portfolioBrowseTitle: "All listings & developments",
+        portfolioBrowseSubtitle:
+          "Results update when you search or change filters in the panel above. Use page numbers when there are more than nine matches.",
+      },
+      id: {
+        portfolio: "Portofolio",
+        title: "Properti Bali Dijual",
+        heroSub:
+          "Jelajahi pilihan terkurasi vila, pengembangan, dan tanah di lokasi-lokasi paling diminati di Bali. Sesuaikan pencarian Anda di bawah untuk melihat listing yang tersedia.",
+        search: "Cari berdasarkan nama, kode, atau area...",
+        clear: "Reset",
+        portfolioBrowseTitle: "Semua listing & pengembangan",
+        portfolioBrowseSubtitle:
+          "Hasil berubah saat Anda mencari atau mengubah filter di panel di atas. Gunakan nomor halaman jika lebih dari sembilan hasil.",
+      },
+      fr: {
+        portfolio: "Portefeuille",
+        title: "Biens a vendre a Bali",
+        heroSub:
+          "Decouvrez une selection soignee de villas, programmes immobiliers et terrains dans les zones les plus recherche de Bali. Affinez votre recherche ci-dessous pour voir les annonces disponibles.",
+        search: "Rechercher par nom, code ou zone...",
+        clear: "Effacer",
+        portfolioBrowseTitle: "Toutes les annonces et programmes",
+        portfolioBrowseSubtitle:
+          "Les resultats se mettent a jour selon votre recherche et vos filtres. Utilisez la pagination au-dela de neuf biens.",
+      },
+      zh: {
+        portfolio: "项目组合",
+        title: "巴厘岛在售房源",
+        heroSub:
+          "探索精选别墅、开发项目及土地，覆盖巴厘岛最受欢迎的区域。在下方完善搜索条件以查看在售房源。",
+        search: "按名称、编号或区域搜索...",
+        clear: "清除",
+        portfolioBrowseTitle: "全部房源与项目",
+        portfolioBrowseSubtitle: "在上方调整搜索或筛选后结果会更新；超过九条时请用页码翻页。",
+      },
+      tr: {
+        portfolio: "Portfoy",
+        title: "Bali Satilik Gayrimenkul",
+        heroSub:
+          "Bali'nin en cok talep goren bolgelerinde villalar, projeler ve arsa icin secilmis bir portfoyu kesfedin. Mevcut ilanlari gormek icin asagidan aramanizi daraltin.",
+        search: "Isim, kod veya bolgeye gore ara...",
+        clear: "Temizle",
+        portfolioBrowseTitle: "Tum ilanlar ve projeler",
+        portfolioBrowseSubtitle:
+          "Ustteki arama ve filtreler degistiginde sonuclar guncellenir. Dokuzdan fazla eslesme icin sayfa numaralarini kullanin.",
+      },
+    };
+    return map[language];
+  }, [language]);
   const [area, setArea] = useState<string>("all");
   const [propertyType, setPropertyType] = useState<string>("all");
   const [bedrooms, setBedrooms] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [listingsPage, setListingsPage] = useState(0);
 
   const {
     data: projectData,
@@ -59,7 +98,10 @@ export default function Projects() {
   } = useListProjects({
     area: area !== "all" ? area : undefined,
     property_type: propertyType !== "all" ? propertyType : undefined,
-    bedrooms: bedrooms !== "all" ? Number(bedrooms) : undefined,
+    bedrooms:
+      bedrooms !== "all" && bedrooms !== "4" && bedrooms !== "6+"
+        ? Number(bedrooms)
+        : undefined,
     limit: 200,
   });
 
@@ -86,22 +128,7 @@ export default function Projects() {
   const projectsFetchFailed = projectsError && !inventoryError;
   const inventoryFetchFailed = inventoryError && !projectsError;
 
-  const cards = useMemo(() => {
-
-    const projectCards: MergedCard[] = projects.map((p) => ({
-      kind: "project" as const,
-      id: `p-${p.id}`,
-      slug: p.slug,
-      title: p.title,
-      area: p.area,
-      shortDescription: p.shortDescription,
-      priceLine: `From ${p.currency} ${p.priceFrom.toLocaleString()}`,
-      heroImageUrl: p.heroImageUrl ?? null,
-      featured: p.featured,
-      unitsLeft: p.unitsLeft ?? null,
-      completionDate: p.completionDate ?? null,
-    }));
-
+  const portfolioFeaturedModels = useMemo((): FeaturedCardModel[] => {
     const listingsPublic = listingsRaw.filter((row) => {
       const vis = row.visibility ?? "active";
       const sale = row.saleStatus ?? "available";
@@ -111,17 +138,23 @@ export default function Projects() {
     const listingsFiltered = listingsPublic.filter((row) => {
       if (area !== "all" && inferListingArea(row.title, row.description) !== area) return false;
       if (bedrooms !== "all") {
-        const b = Number(bedrooms);
         const n = inferBedroomsBucket(row.title, row.description);
         if (n !== null) {
-          if (b === 4) {
+          if (bedrooms === "4") {
             if (n < 4) return false;
-          } else if (n !== b) {
+          } else if (bedrooms === "6+") {
+            if (n < 6) return false;
+          } else if (Number(bedrooms) !== n) {
             return false;
           }
         }
       }
-      if (propertyType !== "all" && propertyType !== "Villa") return false;
+      if (propertyType !== "all") {
+        const blob = `${row.title} ${row.description}`.toLowerCase();
+        if (propertyType === "Villa" && !/\bvilla\b|\bvillas\b/i.test(blob)) return false;
+        if (propertyType === "Apartment" && !/\b(apartment|apt|penthouse|condo)\b/i.test(blob)) return false;
+        if (propertyType === "Land" && !/\b(land|plot|tanah)\b/i.test(blob)) return false;
+      }
       return true;
     });
 
@@ -129,142 +162,153 @@ export default function Projects() {
       (a, b) => Number(!!b.featured) - Number(!!a.featured),
     );
 
-    const listingCards: MergedCard[] = listingsForCards.map((row) => ({
-      kind: "listing" as const,
-      id: `i-${row.id}`,
-      code: row.code,
-      title: row.title || row.code,
-      area: inferListingArea(row.title, row.description),
-      shortDescription: listingShortBlurb(row.description),
-      priceLine: listingPriceLine(row.description),
-      listingUrl: row.listingUrl ?? null,
-      imageUrl:
-        (Array.isArray(row.imageUrls) && row.imageUrls.length > 0 ? row.imageUrls[0] : row.imageUrl) ?? null,
-      featured: row.featured ?? false,
-    }));
+    type MergedItem =
+      | { kind: "project"; p: (typeof projects)[number] }
+      | { kind: "listing"; row: (typeof listingsForCards)[number] };
 
-    let merged = [...projectCards, ...listingCards];
+    let mergedItems: MergedItem[] = [
+      ...projects.map((p) => ({ kind: "project" as const, p })),
+      ...listingsForCards.map((row) => ({ kind: "listing" as const, row })),
+    ];
 
     if (search.trim()) {
       const q = search.toLowerCase();
-      merged = merged.filter((c) => {
-        const blob =
-          c.kind === "project"
-            ? `${c.title} ${c.area} ${c.shortDescription}`
-            : `${c.code} ${c.title} ${c.area}`;
-        return blob.toLowerCase().includes(q);
+      mergedItems = mergedItems.filter((item) => {
+        if (item.kind === "project") {
+          const c = item.p;
+          return `${c.title} ${c.area} ${c.shortDescription}`.toLowerCase().includes(q);
+        }
+        const row = item.row;
+        const ar = inferListingArea(row.title, row.description);
+        return `${row.code} ${row.title} ${ar}`.toLowerCase().includes(q);
       });
     }
 
-    return merged;
+    return mergedItems.map((item, idx) =>
+      item.kind === "project"
+        ? developmentProjectToFeaturedModel(
+            {
+              id: item.p.id,
+              slug: item.p.slug,
+              title: item.p.title,
+              area: item.p.area,
+              shortDescription: item.p.shortDescription,
+              heroImageUrl: item.p.heroImageUrl,
+              featured: item.p.featured,
+              priceFrom: item.p.priceFrom,
+              currency: item.p.currency,
+              propertyType: item.p.propertyType,
+              bedroomsMin: item.p.bedroomsMin,
+              bedroomsMax: item.p.bedroomsMax,
+            },
+            idx,
+          )
+        : inventoryRowToFeaturedModel(item.row, idx),
+    );
   }, [projects, listingsRaw, area, bedrooms, propertyType, search]);
 
+  const listingsTotalPages = Math.max(1, Math.ceil(portfolioFeaturedModels.length / LISTINGS_PAGE_SIZE));
+  const listingsPageSafe = Math.min(listingsPage, listingsTotalPages - 1);
+  const listingsPageModels = portfolioFeaturedModels.slice(
+    listingsPageSafe * LISTINGS_PAGE_SIZE,
+    listingsPageSafe * LISTINGS_PAGE_SIZE + LISTINGS_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setListingsPage(0);
+  }, [area, propertyType, bedrooms, search]);
+
+  useEffect(() => {
+    setListingsPage((p) => Math.min(p, listingsTotalPages - 1));
+  }, [listingsTotalPages]);
+
+  const homeCopy = HOME_COPY[language];
+  const searchLabels = {
+    searchHeadline: homeCopy.searchHeadline,
+    propertyType: homeCopy.propertyType,
+    area: homeCopy.area,
+    bedrooms: homeCopy.bedrooms,
+    ownership: homeCopy.ownership,
+    priceRange: homeCopy.priceRange,
+    devStatus: homeCopy.devStatus,
+    propertyCode: homeCopy.propertyCode,
+    search: homeCopy.search,
+  };
+
+  function handleSearchApply(payload: PropertySearchApplyPayload) {
+    setArea(payload.area);
+    setPropertyType(payload.propertyType);
+    setBedrooms(payload.bedrooms);
+    setSearch(payload.listingQuery);
+    requestAnimationFrame(() =>
+      document.getElementById("portfolio-results")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ backgroundColor: BALI_PROPERTIES_PAGE_SURFACE }}>
       <Seo
-        title="Developments and listings portfolio"
+        title="Bali properties for sale · 8 Degree"
         description={truncateForMeta(
-          "Browse Bali developments and website-channel inventory from our sheet. Filter by area, type, and bedrooms.",
+          "Explore a curated selection of villas, developments, and land across Bali's most sought-after locations. Refine your search to view available listings.",
         )}
         path="/projects"
       />
-      <div className="bg-foreground text-background pt-32 pb-16 px-6">
-        <div className="container mx-auto max-w-6xl">
+      <section className="relative w-full">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden min-h-[min(100dvh,960px)]">
+          <div className="absolute inset-0 z-10 bg-black/40" aria-hidden />
+          <img
+            src="/site-media/real-estate-for-sale-hero.png"
+            alt=""
+            className="hero-image-breathe h-full min-h-[min(100dvh,960px)] w-full object-cover"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+        <div className="relative z-20 mx-auto flex min-h-[min(100dvh,960px)] w-full max-w-6xl flex-col items-center justify-center px-6 py-20 text-center text-white translate-y-[6dvh] md:translate-y-[8dvh] lg:translate-y-[9dvh] md:py-24">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs tracking-[0.3em] uppercase text-primary mb-4"
+            className="mb-4 text-xs font-medium uppercase tracking-[0.28em] text-white/90"
           >
-            Portfolio
+            {t.portfolio}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-serif text-4xl md:text-6xl leading-tight"
+            className="max-w-4xl font-serif text-4xl font-bold leading-tight tracking-[0.04em] md:text-6xl"
           >
-            Developments and Listings
+            {t.title}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="mt-4 text-sm text-background/70 max-w-2xl"
+            className="mt-5 max-w-2xl text-sm font-light text-white/85 md:text-base"
+          >
+            {t.heroSub}
+          </motion.p>
+          <PropertySearchPanel
+            layout="embeddedInHero"
+            labels={searchLabels}
+            onApply={handleSearchApply}
           />
         </div>
-      </div>
+      </section>
 
-      <div className="border-b border-border bg-card sticky top-16 z-30">
-        <div className="container mx-auto max-w-6xl px-6 py-4">
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, code, or area..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 rounded-none h-10"
-                data-testid="input-search"
-              />
-            </div>
-            <Select value={area} onValueChange={setArea}>
-              <SelectTrigger className="w-full md:w-40 rounded-none h-10" data-testid="select-area">
-                <SelectValue placeholder="Area" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Areas</SelectItem>
-                <SelectItem value="Seminyak">Seminyak</SelectItem>
-                <SelectItem value="Canggu">Canggu</SelectItem>
-                <SelectItem value="Uluwatu">Uluwatu</SelectItem>
-                <SelectItem value="Ubud">Ubud</SelectItem>
-                <SelectItem value="Sanur">Sanur</SelectItem>
-                <SelectItem value="Nusa Dua">Nusa Dua</SelectItem>
-                <SelectItem value="Tabanan">Tabanan</SelectItem>
-                <SelectItem value="Bali">Bali (unspecified)</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={propertyType} onValueChange={setPropertyType}>
-              <SelectTrigger className="w-full md:w-40 rounded-none h-10" data-testid="select-type">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Villa">Villa</SelectItem>
-                <SelectItem value="Apartment">Apartment</SelectItem>
-                <SelectItem value="Land">Land</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={bedrooms} onValueChange={setBedrooms}>
-              <SelectTrigger className="w-full md:w-40 rounded-none h-10" data-testid="select-bedrooms">
-                <SelectValue placeholder="Bedrooms" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Any</SelectItem>
-                <SelectItem value="1">1 Bed</SelectItem>
-                <SelectItem value="2">2 Beds</SelectItem>
-                <SelectItem value="3">3 Beds</SelectItem>
-                <SelectItem value="4">4+ Beds</SelectItem>
-              </SelectContent>
-            </Select>
-            {(area !== "all" || propertyType !== "all" || bedrooms !== "all" || search) && (
-              <Button
-                variant="ghost"
-                className="rounded-none text-sm"
-                onClick={() => {
-                  setArea("all");
-                  setPropertyType("all");
-                  setBedrooms("all");
-                  setSearch("");
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+      <FeaturedInventoryStrip
+        title={homeCopy.highlighted}
+        subtitle={homeCopy.highlightedSub}
+        viewAllLabel={homeCopy.viewAll}
+        viewAllHref="#portfolio-results"
+        sectionVariant="standalone"
+        hideHeading
+        maxCards={9}
+        sectionBackgroundColor={BALI_PROPERTIES_PAGE_SURFACE}
+      />
 
-      <div className="container mx-auto max-w-6xl px-6 py-16">
+      <div id="portfolio-results" className="container mx-auto max-w-6xl px-6 py-16">
         {projectsFetchFailed ? (
           <div
             className="mb-8 rounded-lg border border-amber-600/35 bg-amber-500/[0.08] px-4 py-3 text-sm text-foreground"
@@ -291,108 +335,87 @@ export default function Projects() {
               <code className="text-[11px]">/api</code> proxies correctly from Vite.
             </p>
           </div>
-        ) : isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="aspect-[3/4] bg-muted animate-pulse" />
-            ))}
-          </div>
-        ) : cards.length === 0 ? (
-          <PortfolioEmptyState
-            hasFilters={
-              area !== "all" || propertyType !== "all" || bedrooms !== "all" || Boolean(search.trim())
-            }
-            projectCount={projectsError ? 0 : (projectData?.projects?.length ?? 0)}
-            websiteInventoryCount={inventoryError ? 0 : (inventoryData?.listings?.length ?? 0)}
-            projectsUnavailable={projectsError}
-            inventoryUnavailable={inventoryError}
-          />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {cards.map((card, i) =>
-              card.kind === "project" ? (
-                <motion.div
-                  key={card.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  data-testid={`card-project-${card.slug}`}
-                >
-                  <Link href={`/projects/${card.slug}`}>
-                    <div className="group cursor-pointer">
-                      <div className="relative overflow-hidden rounded-2xl aspect-[3/4] bg-muted mb-4 border border-border/60 shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
-                        {card.heroImageUrl && (
-                          <img
-                            src={card.heroImageUrl}
-                            alt={card.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        )}
-                        <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
-                          <span className="rounded-full bg-secondary/95 text-secondary-foreground text-[10px] tracking-[0.16em] uppercase px-2.5 py-1 backdrop-blur-sm">
-                            Development
-                          </span>
-                          {card.featured && (
-                            <span className="rounded-full bg-primary/95 text-primary-foreground text-[10px] tracking-[0.16em] uppercase px-2.5 py-1 backdrop-blur-sm">
-                              Featured
-                            </span>
-                          )}
-                          {card.unitsLeft !== null && card.unitsLeft !== undefined && (
-                            <span className="rounded-full bg-foreground/90 text-background text-[10px] tracking-[0.16em] uppercase px-2.5 py-1 backdrop-blur-sm">
-                              {card.unitsLeft} Unit{card.unitsLeft !== 1 ? "s" : ""} Left
-                            </span>
-                          )}
-                        </div>
-                        {card.completionDate && (
-                          <div className="absolute top-3 right-3 rounded-full bg-background/90 text-foreground text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 backdrop-blur-sm">
-                            Completion {card.completionDate}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1 text-muted-foreground text-[11px] tracking-[0.15em] uppercase mb-2">
-                          <MapPin size={10} />
-                          {card.area}
-                        </div>
-                        <h3 className="font-sans text-[28px] leading-[1.05] font-semibold uppercase tracking-[0.02em] mb-1 group-hover:text-primary transition-colors">
-                          {card.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{card.shortDescription}</p>
-                        <p className="text-sm font-medium text-foreground/85">{card.priceLine}</p>
+          <section className="pb-16 pt-4 md:pb-20 md:pt-6" style={{ backgroundColor: BALI_PROPERTIES_PAGE_SURFACE }}>
+            <div className="mx-auto max-w-[1400px] px-4 sm:px-6 md:px-10">
+              <div className="mb-10 mx-auto max-w-2xl text-center md:mb-12">
+                <h2 className="font-serif text-3xl font-bold uppercase tracking-[0.06em] text-primary md:text-4xl lg:text-[2.35rem]">
+                  {t.portfolioBrowseTitle}
+                </h2>
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#1c1917]/70 md:text-base">
+                  {t.portfolioBrowseSubtitle}
+                </p>
+              </div>
+
+              {isLoading ? (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+                  {Array.from({ length: LISTINGS_PAGE_SIZE }, (_, i) => (
+                    <div key={i} className="overflow-hidden rounded-2xl bg-white/60 shadow-sm">
+                      <div className="aspect-[16/10] animate-pulse bg-[#d8d4ce]/80" />
+                      <div className="space-y-3 px-5 py-4">
+                        <div className="h-3 w-[65%] animate-pulse rounded bg-[#1c1917]/10" />
+                        <div className="h-5 w-full animate-pulse rounded bg-[#1c1917]/10" />
+                        <div className="h-4 w-1/2 animate-pulse rounded bg-[#1c1917]/10" />
                       </div>
                     </div>
-                  </Link>
-                </motion.div>
+                  ))}
+                </div>
+              ) : portfolioFeaturedModels.length === 0 ? (
+                <PortfolioEmptyState
+                  hasFilters={
+                    area !== "all" || propertyType !== "all" || bedrooms !== "all" || Boolean(search.trim())
+                  }
+                  projectCount={projectsError ? 0 : (projectData?.projects?.length ?? 0)}
+                  websiteInventoryCount={inventoryError ? 0 : (inventoryData?.listings?.length ?? 0)}
+                  projectsUnavailable={projectsError}
+                  inventoryUnavailable={inventoryError}
+                />
               ) : (
-                <motion.div
-                  key={card.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  data-testid={`card-listing-${card.code}`}
-                  className="relative"
-                >
-                  <Link href={`/properties/${encodeURIComponent(card.code)}`} className="block group cursor-pointer">
-                    <ListingCardInner card={card} />
-                  </Link>
-                  {card.listingUrl ? (
-                    <a
-                      href={card.listingUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute top-3 right-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
-                      title="Open original listing"
-                      aria-label="Open original listing"
+                <>
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+                    {listingsPageModels.map((model, i) => {
+                      const isProjectCard = model.href.startsWith("/projects/");
+                      const testSlug = isProjectCard ? model.href.replace(/^\/projects\//, "") : "";
+                      return (
+                        <div
+                          key={model.id}
+                          data-testid={
+                            isProjectCard ? `card-project-${testSlug}` : `card-listing-${model.code}`
+                          }
+                        >
+                          <FeaturedListingCard model={model} idx={i} />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {listingsTotalPages > 1 ? (
+                    <nav
+                      className="mt-10 flex flex-wrap items-center justify-center gap-2 md:mt-12"
+                      aria-label="Listing pages"
                     >
-                      <ExternalLink size={16} />
-                    </a>
+                      {Array.from({ length: listingsTotalPages }, (_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setListingsPage(i)}
+                          className={cn(
+                            "min-h-9 min-w-9 rounded-full border px-3 py-1.5 text-sm font-medium tabular-nums transition-colors",
+                            i === listingsPageSafe
+                              ? "border-transparent text-white shadow-sm"
+                              : "border-[#1c1917]/20 bg-white/80 text-[#1c1917] hover:border-[#01514E]/40 hover:bg-white",
+                          )}
+                          style={i === listingsPageSafe ? { backgroundColor: HIGHLIGHTED_CARD_BRAND } : undefined}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                    </nav>
                   ) : null}
-                </motion.div>
-              ),
-            )}
-          </div>
+                </>
+              )}
+            </div>
+          </section>
         )}
       </div>
     </div>
@@ -412,23 +435,32 @@ function PortfolioEmptyState({
   projectsUnavailable: boolean;
   inventoryUnavailable: boolean;
 }) {
+  const language = useSiteLanguage();
+  const emptyCopy: Record<SiteLanguage, { title: string; sub: string }> = {
+    en: { title: "Nothing matches your filters", sub: "Try clearing filters or search." },
+    id: { title: "Tidak ada hasil sesuai filter", sub: "Coba hapus filter atau kata kunci." },
+    fr: { title: "Aucun resultat pour ces filtres", sub: "Essayez de reinitialiser les filtres." },
+    zh: { title: "没有符合筛选的结果", sub: "请尝试清除筛选条件。" },
+    tr: { title: "Filtrelere uygun sonuc yok", sub: "Filtreleri temizleyip tekrar deneyin." },
+  };
+
   if (hasFilters) {
     return (
       <div className="text-center py-24 text-muted-foreground">
-        <p className="font-serif text-2xl mb-2 text-foreground">Nothing matches your filters</p>
-        <p className="text-sm">Try clearing filters or search.</p>
+        <p className="mb-2 font-serif text-2xl font-bold tracking-[0.04em] text-primary">{emptyCopy[language].title}</p>
+        <p className="text-sm font-light">{emptyCopy[language].sub}</p>
       </div>
     );
   }
 
   return (
     <div className="text-center py-16 text-muted-foreground max-w-2xl mx-auto space-y-4">
-      <p className="font-serif text-2xl text-foreground">Nothing to show on the portfolio yet</p>
+      <p className="font-serif text-2xl text-primary">Nothing to show on the portfolio yet</p>
       <p className="text-sm">
         Before filters: {projectsUnavailable ? "developments unavailable" : `${projectCount} development(s)`},{" "}
         {inventoryUnavailable ? "sheet inventory unavailable" : `${websiteInventoryCount} website-channel row(s) from the sheet`}.
       </p>
-      <p className="text-sm leading-relaxed">
+      <p className="text-sm font-light leading-relaxed">
         Rows with <code className="text-[11px] bg-muted px-1 py-0.5 text-foreground">channel: &quot;silent&quot;</code> stay
         in admin only. Use Admin → Inventory and upsert with{" "}
         <code className="text-[11px] bg-muted px-1 py-0.5 text-foreground">website</code> for listings that should appear
@@ -438,64 +470,5 @@ function PortfolioEmptyState({
         Developments use the projects table when the database is set up. Listings come from your configured Google Sheet.
       </p>
     </div>
-  );
-}
-
-function ListingCardInner({
-  card,
-}: {
-  card: Extract<MergedCard, { kind: "listing" }>;
-}) {
-  const hasImg = Boolean(card.imageUrl);
-  return (
-    <>
-      <div className="relative mb-4 aspect-[3/4] overflow-hidden rounded-2xl border border-border/60 bg-[#F4EFE8] shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
-        {hasImg ? (
-          <img
-            src={card.imageUrl!}
-            alt=""
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-            referrerPolicy="no-referrer"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(145deg,#F4EFE8_0%,#e8dfd4_48%,#ddd4c8_100%)]" />
-        )}
-        {hasImg ? <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" /> : null}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <span
-            className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] backdrop-blur-md ${
-              hasImg
-                ? "border border-white/35 bg-white/20 text-white"
-                : "border border-[#1c1917]/10 bg-white/75 text-[#1c1917]/85"
-            }`}
-          >
-            Sheet
-          </span>
-          {card.featured ? (
-            <span
-              className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] backdrop-blur-md ${
-                hasImg ? "bg-amber-500/95 text-white" : "bg-amber-500 text-white"
-              }`}
-            >
-              Featured
-            </span>
-          ) : null}
-        </div>
-      </div>
-      <div className="px-0.5">
-        <div className="mb-2 flex items-center gap-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          <MapPin size={10} aria-hidden />
-          <span>Listing · {card.area}</span>
-        </div>
-        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/75">{card.code}</p>
-        <h3 className="font-serif text-[22px] leading-snug text-foreground line-clamp-2 transition-colors group-hover:text-primary md:text-[24px]">
-          {card.title}
-        </h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{card.shortDescription}</p>
-        <p className="mt-2 text-sm font-medium text-foreground/90">{card.priceLine}</p>
-      </div>
-    </>
   );
 }

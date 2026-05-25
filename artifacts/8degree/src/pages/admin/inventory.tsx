@@ -291,7 +291,7 @@ export default function AdminInventory() {
             <code className="text-xs bg-muted px-1">http://localhost:8080</code> by default (set{" "}
             <code className="text-xs bg-muted px-1">API_URL</code> when starting Vite if the API uses another host/port).
           </p>
-          <p className="text-muted-foreground text-xs mb-3 font-mono break-all">
+          <p className="text-muted-foreground text-xs mb-3 font-sans break-all">
             {error instanceof Error ? error.message : String(error)}
           </p>
           <p className="text-muted-foreground text-xs mb-4">
@@ -390,7 +390,7 @@ export default function AdminInventory() {
                           </div>
                           <div className="text-xs text-muted-foreground">
                             <span className="text-muted-foreground/80">Listing ID:</span>{" "}
-                            <span className="font-mono text-foreground">{listing.code}</span>
+                            <span className="font-sans text-foreground">{listing.code}</span>
                           </div>
                           <div className="text-[11px] text-muted-foreground line-clamp-2 pt-0.5">{listing.title}</div>
                           <div className="pt-1">

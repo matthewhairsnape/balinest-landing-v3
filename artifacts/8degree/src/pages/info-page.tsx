@@ -1,10 +1,19 @@
 import { Seo } from "@/components/site/Seo";
 import { useLocation } from "wouter";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 type InfoPageContent = {
   title: string;
   description: string;
   body: string[];
+};
+
+const PAGE_FALLBACK_TRANSLATION: Record<SiteLanguage, { title: string; description: string; body: string[] }> = {
+  en: { title: "Page", description: "Information page.", body: ["This page is available and will be expanded with full content soon."] },
+  id: { title: "Halaman", description: "Halaman informasi.", body: ["Halaman ini tersedia dan akan dilengkapi konten lengkap segera."] },
+  fr: { title: "Page", description: "Page d'information.", body: ["Cette page est disponible et sera enrichie prochainement."] },
+  zh: { title: "页面", description: "信息页面。", body: ["该页面已可用，完整内容将很快补充。"] },
+  tr: { title: "Sayfa", description: "Bilgi sayfasi.", body: ["Bu sayfa kullanima acik ve yakinda genisletilecektir."] },
 };
 
 const INFO_BY_PATH: Record<string, InfoPageContent> = {
@@ -72,33 +81,20 @@ const INFO_BY_PATH: Record<string, InfoPageContent> = {
       "Use this guide as a framework before shortlisting opportunities.",
     ],
   },
-  "/bali-location-guide": {
-    title: "Bali Location Guide",
-    description: "Area-by-area guide to Bali locations for living and investment.",
-    body: [
-      "Compare location profiles by lifestyle, demand, and growth potential.",
-      "We help match your goals with the right micro-market.",
-    ],
-  },
-};
-
-const FALLBACK: InfoPageContent = {
-  title: "Page",
-  description: "Information page.",
-  body: ["This page is available and will be expanded with full content soon."],
 };
 
 export default function InfoPage() {
+  const language = useSiteLanguage();
   const [location] = useLocation();
-  const page = INFO_BY_PATH[location] ?? FALLBACK;
+  const page = INFO_BY_PATH[location] ?? PAGE_FALLBACK_TRANSLATION[language];
 
   return (
     <div className="min-h-screen bg-background pt-28 pb-20 px-6">
       <Seo title={page.title} description={page.description} path={location} />
       <div className="mx-auto max-w-3xl">
-        <h1 className="font-serif text-4xl md:text-5xl text-foreground">{page.title}</h1>
-        <p className="mt-4 text-muted-foreground">{page.description}</p>
-        <div className="mt-10 space-y-5 text-foreground/90 leading-relaxed">
+        <h1 className="font-serif text-4xl font-bold tracking-[0.04em] text-primary md:text-5xl">{page.title}</h1>
+        <p className="mt-4 font-light text-muted-foreground">{page.description}</p>
+        <div className="mt-10 space-y-5 font-light leading-relaxed text-foreground/90">
           {page.body.map((p) => (
             <p key={p}>{p}</p>
           ))}

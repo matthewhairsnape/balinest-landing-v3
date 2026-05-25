@@ -9,6 +9,7 @@ const SEO_SITEMAP_PATHS = [
   "/sell",
   "/about-us",
   "/buyer-agents",
+  "/buyer-agent",
   "/journal",
   "/favorite-properties",
   "/buy-land",
@@ -26,6 +27,7 @@ const SEO_SITEMAP_PATHS = [
   "/about",
   "/contact",
   "/invest",
+  "/investment-guide",
   "/pricing",
   "/blog",
 ];

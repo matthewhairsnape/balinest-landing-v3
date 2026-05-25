@@ -2,6 +2,32 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+/* @font-face rules live in /fonts/fonts.css (linked from index.html) */
+
+/* Shared hero background: slow zoom in/out (CSS; works in preview & all targets). */
+@keyframes hero-image-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.09);
+  }
+}
+
+.hero-image-breathe {
+  transform-origin: center center;
+  animation: hero-image-breathe 16s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-image-breathe {
+    animation: none;
+    transform: none;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -82,7 +108,7 @@
 
   --border: 30 15% 85%;
   --input: 30 15% 85%;
-  --ring: 160 30% 35%; /* Jade */
+  --ring: 177 98% 16%; /* brand #01514E */
 
   --card: 0 0% 100%;
   --card-foreground: 20 14% 15%;
@@ -92,8 +118,8 @@
   --popover-foreground: 20 14% 15%;
   --popover-border: 30 15% 85%;
 
-  /* Primary: Tropical Jade */
-  --primary: 160 30% 35%;
+  /* Primary: 8 Degree brand green #01514E */
+  --primary: 177 98% 16%;
   --primary-foreground: 0 0% 100%;
 
   /* Secondary: Soft Sand/Gold */
@@ -113,21 +139,25 @@
   --sidebar: 40 33% 97%;
   --sidebar-foreground: 20 14% 15%;
   --sidebar-border: 30 15% 85%;
-  --sidebar-primary: 160 30% 35%;
+  --sidebar-primary: 177 98% 16%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 35 40% 90%;
   --sidebar-accent-foreground: 20 14% 15%;
-  --sidebar-ring: 160 30% 35%;
+  --sidebar-ring: 177 98% 16%;
 
-  --chart-1: 160 30% 35%;
+  --chart-1: 177 98% 16%;
   --chart-2: 20 14% 15%;
   --chart-3: 35 40% 70%;
   --chart-4: 30 15% 85%;
   --chart-5: 0 0% 50%;
 
-  --app-font-sans: 'Plus Jakarta Sans', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
-  --app-font-mono: Menlo, monospace;
+  /* UI + body: Montserrat. Display / `font-serif`: Rework (see /fonts/fonts.css). */
+  --app-font-family: "Montserrat", sans-serif;
+  --app-font-title: "Rework", "Montserrat", sans-serif;
+  --app-font-sans: var(--app-font-family);
+  --app-font-serif: "Rework", "Montserrat", sans-serif;
+  --app-font-mono: var(--app-font-family);
+  --app-tracking-label: 0.28em;
   
   --radius: 0rem; /* Sharp corners for luxury feel */
 
@@ -167,7 +197,7 @@
 
   --border: 20 10% 20%;
   --input: 20 10% 20%;
-  --ring: 160 30% 45%;
+  --ring: 177 55% 42%;
 
   --card: 20 14% 12%;
   --card-foreground: 40 33% 97%;
@@ -176,17 +206,17 @@
   --sidebar: 20 14% 12%;
   --sidebar-foreground: 40 33% 97%;
   --sidebar-border: 20 10% 20%;
-  --sidebar-primary: 160 30% 45%;
+  --sidebar-primary: 177 55% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 20 10% 20%;
   --sidebar-accent-foreground: 40 33% 97%;
-  --sidebar-ring: 160 30% 45%;
+  --sidebar-ring: 177 55% 42%;
 
   --popover: 20 14% 12%;
   --popover-foreground: 40 33% 97%;
   --popover-border: 20 10% 20%;
 
-  --primary: 160 30% 45%;
+  --primary: 177 55% 42%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 20 10% 20%;
@@ -201,7 +231,7 @@
   --destructive: 0 62% 30%;
   --destructive-foreground: 40 33% 97%;
 
-  --chart-1: 160 30% 45%;
+  --chart-1: 177 55% 42%;
   --chart-2: 40 33% 97%;
   --chart-3: 35 40% 50%;
   --chart-4: 20 10% 30%;
@@ -219,13 +249,37 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply antialiased bg-background text-foreground;
+    font-family: var(--app-font-family);
+    font-weight: 300;
+  }
+
+  /* Display headings: Rework via --app-font-title; match Tailwind `font-serif` stack */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--app-font-title);
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
 
   button,
   [role="button"],
   summary {
     touch-action: manipulation;
+  }
+
+  .prose {
+    font-family: var(--app-font-family);
+    font-weight: 300;
+  }
+
+  .prose :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--app-font-title);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .prose :where(strong) {
+    font-weight: 500;
   }
 }
 
