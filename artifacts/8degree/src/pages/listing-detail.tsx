@@ -925,14 +925,11 @@ export default function ListingDetail() {
           const tail = parts[parts.length - 1] || "";
           return (
             <h1
+              className="break-words font-serif font-light leading-[1.05] tracking-[-0.02em] text-[clamp(1.75rem,5vw,3rem)]"
               style={{
                 fontFamily: FONT_SERIF,
                 color: PALETTE.brand,
-                fontSize: 48,
                 fontWeight: 300,
-                lineHeight: 1.05,
-                letterSpacing: "-0.02em",
-                whiteSpace: "nowrap",
               }}
             >
               {head ? (
@@ -1022,7 +1019,7 @@ export default function ListingDetail() {
       </section>
 
       {/* STORY: SectionLabel title, body fills width minus 3cm side margins  */}
-      <section className="px-6 pb-16 pt-2 md:pb-20 md:[padding-left:3cm] md:[padding-right:3cm] lg:pb-24">
+      <section className="page-container page-gutter pb-16 pt-2 md:pb-20 lg:pb-24">
         <SectionLabel className="font-bold">{t.story}</SectionLabel>
 
         <div className="mt-6 md:mt-8">
@@ -1086,7 +1083,7 @@ export default function ListingDetail() {
           backgroundColor: PALETTE.brand,
         }}
       >
-        <div className="mx-auto grid max-w-[1500px] auto-rows-fr grid-cols-2 gap-2.5 md:grid-cols-5 md:gap-3">
+        <div className="mx-auto grid max-w-[1500px] auto-rows-fr grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-5 md:gap-3">
           {stats.map((s) => (
             <div
               key={s.label}

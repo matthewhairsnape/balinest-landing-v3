@@ -486,8 +486,8 @@ export function PropertySearchPanel({
               : "-translate-y-[25%] rounded-[18px] bg-[#f7f5f1] px-6 py-6 shadow-[0_14px_40px_rgba(0,0,0,0.16)] md:px-10 md:py-7"
           }
         >
-          <div className="mb-6 flex w-full justify-center overflow-x-auto px-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4">
-            <h3 className="shrink-0 whitespace-nowrap text-center text-[clamp(0.7rem,2.6vmin_+_0.35rem,2.25rem)] font-bold uppercase leading-tight tracking-[0.06em] text-primary">
+          <div className="mb-6 flex w-full justify-center px-2 sm:px-4">
+            <h3 className="max-w-full text-balance text-center text-sm font-bold uppercase leading-snug tracking-[0.04em] text-primary sm:text-base sm:tracking-[0.05em] md:text-xl md:leading-tight md:tracking-[0.06em] lg:text-2xl">
               {t.searchHeadline}
             </h3>
           </div>

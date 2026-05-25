@@ -29,6 +29,7 @@ export const UI_COPY: Record<
     openMenu: string;
     closeMenu: string;
     propertySection: string;
+    companySection: string;
     realEstateForSale: string;
     realEstateForSaleDesc: string;
     longTermRentals: string;
@@ -97,6 +98,7 @@ export const UI_COPY: Record<
     openMenu: "Buka menu",
     closeMenu: "Tutup menu",
     propertySection: "Properti",
+    companySection: "Perusahaan",
     realEstateForSale: "Properti dijual",
     realEstateForSaleDesc:
       "Jelajahi pengembangan dan listing di Bali—terkurasi untuk pembeli yang mengutamakan kualitas, kejelasan, dan kesesuaian strategis.",
@@ -134,6 +136,7 @@ export const UI_COPY: Record<
     openMenu: "Ouvrir le menu",
     closeMenu: "Fermer le menu",
     propertySection: "Propriete",
+    companySection: "Entreprise",
     realEstateForSale: "Immobilier a vendre",
     realEstateForSaleDesc:
       "Parcourez projets et annonces a Bali—selectionnes pour des acheteurs exigeant qualite, clarte et coherence strategique.",
@@ -171,6 +174,7 @@ export const UI_COPY: Record<
     openMenu: "打开菜单",
     closeMenu: "关闭菜单",
     propertySection: "房产",
+    companySection: "公司",
     realEstateForSale: "在售房产",
     realEstateForSaleDesc: "浏览巴厘岛的开发项目与房源——为追求品质、清晰与战略匹配的买家精选。",
     longTermRentals: "长期租赁",
@@ -201,6 +205,7 @@ export const UI_COPY: Record<
     openMenu: "Menüyü aç",
     closeMenu: "Menüyü kapat",
     propertySection: "Mülk",
+    companySection: "Şirket",
     realEstateForSale: "Satılık gayrimenkul",
     realEstateForSaleDesc:
       "Bali genelinde projeler ve ilanlar—kalite, netlik ve stratejik uyum arayan alıcılar için seçilmiş.",

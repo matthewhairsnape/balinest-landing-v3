@@ -414,7 +414,7 @@ export default function LegalGuidePage() {
 
       {/* Intro — lead */}
       <section className={cn(CREAM, "py-16 md:py-24")}>
-        <div className="mx-auto w-full max-w-6xl px-[3cm]">
+        <div className="page-container page-gutter">
           <div className="space-y-5 text-base font-light leading-relaxed text-justify text-[#1c1917]/88 md:text-lg">
             {ui.intro.map((p) => (
               <p key={p.slice(0, 48)}>{p}</p>

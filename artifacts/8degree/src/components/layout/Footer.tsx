@@ -129,10 +129,9 @@ export function Footer() {
 
   return (
     <footer className="bg-primary py-20 text-primary-foreground">
-      <div className="mx-auto w-full px-[2cm]">
-        {/* Brand column + 4 nav columns: flex avoids “empty” grid cells and uneven 5-column splits. */}
-        <div className="mb-16 flex flex-col gap-14 lg:flex-row lg:items-start lg:justify-between lg:gap-10 xl:gap-14">
-          <div className="shrink-0 lg:max-w-[280px]">
+      <div className="page-container page-gutter max-w-7xl">
+        <div className="mb-16 flex flex-col gap-14 md:flex-row md:items-start md:justify-between md:gap-10 lg:gap-14">
+          <div className="shrink-0 md:max-w-[280px] lg:max-w-[320px]">
             <div className="mb-6">
               <img
                 src="/brand/8degree-logotype-white.png"
@@ -147,11 +146,10 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Four columns: 2cm gaps; right-aligned; mr-[1cm] shifts block 1cm left without changing inter-column gap. */}
-          <div className="flex min-w-0 w-full flex-1 flex-col gap-10 lg:mr-[1cm] lg:flex-row lg:flex-nowrap lg:items-start lg:justify-end lg:gap-x-[2cm] lg:gap-y-0">
-            <div className="min-w-0 lg:max-w-[13rem] xl:max-w-[14rem]">
+          <div className="grid min-w-0 w-full flex-1 grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-2 md:grid-cols-4 md:gap-x-6 lg:gap-x-10">
+            <div className="min-w-0">
               <h4 className="mb-6 text-sm font-medium uppercase tracking-[0.28em] text-primary-foreground">Properties</h4>
-              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal md:[&_a]:whitespace-nowrap">
+              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal">
                 <li>
                   <Link href="/projects" className="transition-colors hover:text-primary-foreground">
                     Real Estate For Sale
@@ -165,9 +163,9 @@ export function Footer() {
               </ul>
             </div>
 
-            <div className="min-w-0 lg:max-w-[13rem] xl:max-w-[14rem]">
+            <div className="min-w-0">
               <h4 className="mb-6 text-sm font-medium uppercase tracking-[0.28em] text-primary-foreground">Services</h4>
-              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal md:[&_a]:whitespace-nowrap">
+              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal">
                 <li>
                   <Link href="/buyer-agents" className="transition-colors hover:text-primary-foreground">
                     Buyer&apos;s Agent
@@ -181,9 +179,9 @@ export function Footer() {
               </ul>
             </div>
 
-            <div className="min-w-0 lg:max-w-[13rem] xl:max-w-[14rem]">
+            <div className="min-w-0">
               <h4 className="mb-6 text-sm font-medium uppercase tracking-[0.28em] text-primary-foreground">Guides</h4>
-              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal md:[&_a]:whitespace-nowrap">
+              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal">
                 <li>
                   <Link href="/legal-services" className="transition-colors hover:text-primary-foreground">
                     Legal Guide
@@ -202,9 +200,9 @@ export function Footer() {
               </ul>
             </div>
 
-            <div className="min-w-0 shrink-0 lg:max-w-[13rem] xl:max-w-[14rem]">
+            <div className="min-w-0">
               <h4 className="mb-6 text-sm font-medium uppercase tracking-[0.28em] text-primary-foreground">Company</h4>
-              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal md:[&_a]:whitespace-nowrap">
+              <ul className="space-y-4 text-sm font-light text-primary-foreground/80 [&_a]:whitespace-normal">
                 <li>
                   <Link href="/about" className="transition-colors hover:text-primary-foreground">
                     About Us

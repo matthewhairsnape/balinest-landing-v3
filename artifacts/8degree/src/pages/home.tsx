@@ -337,8 +337,8 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.2 }}
             className="mx-auto mb-6 max-w-5xl text-center font-serif text-4xl font-bold leading-[1.1] tracking-[0.04em] md:text-6xl md:leading-[1.08] lg:text-7xl lg:leading-[1.06]"
           >
-            <span className="block whitespace-nowrap">{t.heroLine1}</span>
-            <span className="block whitespace-nowrap">{t.heroLine2}</span>
+            <span className="block text-balance">{t.heroLine1}</span>
+            <span className="block text-balance">{t.heroLine2}</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 30 }}
@@ -470,45 +470,47 @@ export default function Home() {
             <p className="text-muted-foreground">{t.clientVoicesSub}</p>
           </div>
 
-          <Carousel
-            opts={{ align: "start", loop: true }}
-            className="mx-auto max-w-6xl px-2 md:px-10"
-          >
-            <CarouselContent>
-              {TESTIMONIAL_TEMPLATES.map((row) => (
-                <CarouselItem key={row.id} className="md:basis-1/2 lg:basis-1/3">
-                  <div className="h-full rounded-2xl border border-border bg-background p-7 md:p-8">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={row.avatarUrl}
-                        alt={row.name}
-                        className="h-11 w-11 shrink-0 rounded-full object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div className="min-w-0">
-                        <div className="truncate font-medium text-foreground">{row.name}</div>
-                        <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-primary/80">
-                          Client testimony
+          <Carousel opts={{ align: "center", loop: true }} className="mx-auto w-full max-w-4xl px-1 sm:px-2">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <CarouselPrevious
+                className="static h-10 w-10 shrink-0 translate-x-0 translate-y-0 border-primary/40 bg-background text-primary shadow-sm hover:bg-primary/10 disabled:opacity-40"
+                aria-label="Previous testimonial"
+              />
+              <div className="min-w-0 flex-1">
+                <CarouselContent className="-ml-0">
+                  {TESTIMONIAL_TEMPLATES.map((row) => (
+                    <CarouselItem key={row.id} className="basis-full pl-0">
+                      <div className="h-full rounded-2xl border border-border bg-background p-6 sm:p-8">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={row.avatarUrl}
+                            alt={row.name}
+                            className="h-11 w-11 shrink-0 rounded-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          <div className="min-w-0">
+                            <div className="truncate font-medium text-foreground">{row.name}</div>
+                            <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-primary/80">
+                              Client testimony
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 space-y-4 text-sm font-light leading-relaxed text-muted-foreground">
+                          {row.quote.split("\n\n").map((para) => (
+                            <p key={para}>{para}</p>
+                          ))}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="mt-6 space-y-4 text-sm font-light leading-relaxed text-muted-foreground">
-                      {row.quote.split("\n\n").map((para) => (
-                        <p key={para}>{para}</p>
-                      ))}
-                    </div>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-
-            <div className="pointer-events-none absolute left-0 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block">
-              <CarouselPrevious className="pointer-events-auto static border-primary/40 bg-background/90 text-primary shadow-sm hover:bg-primary/10" />
-            </div>
-            <div className="pointer-events-none absolute right-0 top-1/2 hidden translate-x-1/2 -translate-y-1/2 md:block">
-              <CarouselNext className="pointer-events-auto static border-primary/40 bg-background/90 text-primary shadow-sm hover:bg-primary/10" />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </div>
+              <CarouselNext
+                className="static h-10 w-10 shrink-0 translate-x-0 translate-y-0 border-primary/40 bg-background text-primary shadow-sm hover:bg-primary/10 disabled:opacity-40"
+                aria-label="Next testimonial"
+              />
             </div>
           </Carousel>
         </div>

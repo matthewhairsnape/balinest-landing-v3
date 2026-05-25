@@ -348,14 +348,15 @@ export default function InvestmentGuide() {
             <p className="font-sans text-sm font-semibold md:text-base" style={{ color: INVEST_DARK }}>
               In 2025 alone:
             </p>
-            <div className="mt-4 grid grid-cols-2 border-y border-[#0d4542]/20 md:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 border-y border-[#0d4542]/20 sm:grid-cols-2 md:grid-cols-4">
               {MARKET_STATS_2025.map((stat, i) => (
                 <div
                   key={stat.label}
                   className={cn(
                     "flex flex-col justify-center px-4 py-6 md:px-6 md:py-8",
-                    i % 2 === 0 && "max-md:border-r max-md:border-[#0d4542]/20",
-                    i < 2 && "max-md:border-b max-md:border-[#0d4542]/20",
+                    i < MARKET_STATS_2025.length - 1 && "border-b border-[#0d4542]/20 sm:border-b-0",
+                    i % 2 === 0 && "sm:border-r sm:border-[#0d4542]/20",
+                    i < 2 && "sm:border-b sm:border-[#0d4542]/20 md:border-b-0",
                     i < MARKET_STATS_2025.length - 1 && "md:border-r md:border-[#0d4542]/20",
                   )}
                 >
