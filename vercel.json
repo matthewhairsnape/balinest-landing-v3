@@ -10,6 +10,23 @@
       "includeFiles": "{artifacts/api-server/dist/**,artifacts/api-server/data/**,scripts/data/journal-import.json}"
     }
   },
+  "redirects": [
+    {
+      "source": "/8-degree-real-estate-x-balinest-villa",
+      "destination": "/balinest/",
+      "permanent": true
+    },
+    {
+      "source": "/8-degree-real-estate-x-balinest-villa/",
+      "destination": "/balinest/",
+      "permanent": true
+    },
+    {
+      "source": "/8-degree-real-estate-x-balinest-villa/:path*",
+      "destination": "/balinest/",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",

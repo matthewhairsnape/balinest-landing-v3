@@ -14,6 +14,7 @@ import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { Seo } from "@/components/site/Seo";
 import { SITE_NAME } from "@/lib/site-seo";
+import { LegacyPathRedirect } from "@/components/site/LegacyPathRedirect";
 
 const Home = lazy(() => import("@/pages/home"));
 const Projects = lazy(() => import("@/pages/projects"));
@@ -181,6 +182,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}>
+          <LegacyPathRedirect />
           <Router />
         </WouterRouter>
         <Toaster />
