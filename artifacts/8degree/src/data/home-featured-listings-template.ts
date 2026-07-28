@@ -6,7 +6,7 @@
  * - `"api"` — loads from your inventory API; falls back to this template if the API returns nothing.
  */
 
-export const HOME_FEATURED_LISTINGS_MODE = "template" as "template" | "api";
+export const HOME_FEATURED_LISTINGS_MODE = "api" as "template" | "api";
 
 export type HomeFeaturedListingTemplate = {
   /** Stable id for React keys */

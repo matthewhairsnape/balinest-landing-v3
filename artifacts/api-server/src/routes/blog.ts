@@ -33,80 +33,76 @@ const BlogRefreshQuery = z.object({
   refreshSheet: z.string().optional(),
 });
 
-router.get("/blog/categories", async (req, res): Promise<void> => {
-  const refresh = BlogRefreshQuery.safeParse(req.query);
-  const forceRefresh =
-    refresh.success &&
-    (refresh.data.refreshSheet === "1" || refresh.data.refreshSheet === "true");
-
+/**
+ * HARD RULE: public journal GETs must never take blogs down.
+ * Prefer Google Sheet → bundled journal-import.json → DB.
+ * Never return Express HTML 500 for list/categories/slug reads.
+ */
+async function resolveCategories(forceRefresh: boolean) {
   if (useSheetAsJournalSource()) {
-    await loadArticlesFromGoogleSheet({ forceRefresh });
-    const fromSheet = listJournalSheetCategories();
-    if (fromSheet.length > 0) {
-      res.json({ categories: fromSheet });
-      return;
+    try {
+      await loadArticlesFromGoogleSheet({ forceRefresh });
+      const fromSheet = listJournalSheetCategories();
+      if (fromSheet.length > 0) return { categories: fromSheet };
+    } catch {
+      // fall through
     }
   }
 
-  if (!isDatabaseConfigured()) {
-    res.json({ categories: listJournalFallbackCategories() });
-    return;
-  }
-  await syncJournalImportToDatabaseIfEmpty();
-  const categories = await db
-    .select()
-    .from(blogCategoriesTable)
-    .orderBy(blogCategoriesTable.name);
+  const fallback = { categories: listJournalFallbackCategories() };
 
-  if (categories.length === 0) {
-    res.json({ categories: listJournalFallbackCategories() });
-    return;
-  }
-
-  res.json({
-    categories: categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
-  });
-});
-
-router.get("/blog", async (req, res): Promise<void> => {
-  const parsed = ListBlogPostsQueryParams.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const { category, limit = 12, offset = 0 } = parsed.data;
-  const refresh = BlogRefreshQuery.safeParse(req.query);
-  const forceRefresh =
-    refresh.success &&
-    (refresh.data.refreshSheet === "1" || refresh.data.refreshSheet === "true");
-
-  if (useSheetAsJournalSource()) {
-    const fromSheet = await listJournalFromSheet({
-      category,
-      limit,
-      offset,
-      forceRefresh,
-    });
-    if (fromSheet) {
-      res.json(fromSheet);
-      return;
-    }
-  }
-
-  if (!isDatabaseConfigured()) {
-    res.json(listJournalFallback({ category, limit, offset }));
-    return;
-  }
-
-  await syncJournalImportToDatabaseIfEmpty();
-
-  const conditions = [eq(blogPostsTable.published, true)];
-  if (category) conditions.push(eq(blogCategoriesTable.name, category));
-
-  const where = and(...conditions);
+  if (!isDatabaseConfigured()) return fallback;
 
   try {
+    await syncJournalImportToDatabaseIfEmpty();
+    const categories = await db
+      .select()
+      .from(blogCategoriesTable)
+      .orderBy(blogCategoriesTable.name);
+
+    if (categories.length === 0) return fallback;
+
+    return {
+      categories: categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+async function resolvePostList(opts: {
+  category?: string;
+  limit: number;
+  offset: number;
+  forceRefresh: boolean;
+}) {
+  const { category, limit, offset, forceRefresh } = opts;
+
+  if (useSheetAsJournalSource()) {
+    try {
+      const fromSheet = await listJournalFromSheet({
+        category,
+        limit,
+        offset,
+        forceRefresh,
+      });
+      if (fromSheet && fromSheet.total > 0) return fromSheet;
+    } catch {
+      // fall through
+    }
+  }
+
+  const fallback = listJournalFallback({ category, limit, offset });
+
+  if (!isDatabaseConfigured()) return fallback;
+
+  try {
+    await syncJournalImportToDatabaseIfEmpty();
+
+    const conditions = [eq(blogPostsTable.published, true)];
+    if (category) conditions.push(eq(blogCategoriesTable.name, category));
+    const where = and(...conditions);
+
     const [posts, countResult] = await Promise.all([
       db
         .select({
@@ -127,53 +123,33 @@ router.get("/blog", async (req, res): Promise<void> => {
     ]);
 
     const total = Number(countResult[0]?.count ?? 0);
-    if (total === 0) {
-      res.json(listJournalFallback({ category, limit, offset }));
-      return;
-    }
+    if (total === 0) return fallback;
 
-    res.json({
+    return {
       posts: posts.map(({ post, categoryName }) => mapPost(post, categoryName)),
       total,
-    });
+    };
   } catch {
-    res.json(listJournalFallback({ category, limit, offset }));
+    return fallback;
   }
-});
+}
 
-router.get("/blog/:slug", async (req, res): Promise<void> => {
-  const params = GetBlogPostParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  const refresh = BlogRefreshQuery.safeParse(req.query);
-  const forceRefresh =
-    refresh.success &&
-    (refresh.data.refreshSheet === "1" || refresh.data.refreshSheet === "true");
-
+async function resolvePostBySlug(slug: string, forceRefresh: boolean) {
   if (useSheetAsJournalSource()) {
-    const fromSheet = await getJournalFromSheetBySlug(params.data.slug, { forceRefresh });
-    if (fromSheet) {
-      res.json(fromSheet);
-      return;
+    try {
+      const fromSheet = await getJournalFromSheetBySlug(slug, { forceRefresh });
+      if (fromSheet) return fromSheet;
+    } catch {
+      // fall through
     }
   }
 
-  if (!isDatabaseConfigured()) {
-    const onlyFallback = getJournalFallbackBySlug(params.data.slug);
-    if (!onlyFallback) {
-      res.status(404).json({ error: "Post not found" });
-      return;
-    }
-    res.json(onlyFallback);
-    return;
-  }
+  const fallback = getJournalFallbackBySlug(slug);
 
-  await syncJournalImportToDatabaseIfEmpty();
+  if (!isDatabaseConfigured()) return fallback;
 
   try {
+    await syncJournalImportToDatabaseIfEmpty();
     const [result] = await db
       .select({
         post: blogPostsTable,
@@ -181,23 +157,81 @@ router.get("/blog/:slug", async (req, res): Promise<void> => {
       })
       .from(blogPostsTable)
       .leftJoin(blogCategoriesTable, eq(blogPostsTable.categoryId, blogCategoriesTable.id))
-      .where(eq(blogPostsTable.slug, params.data.slug));
+      .where(eq(blogPostsTable.slug, slug));
 
-    if (result) {
-      res.json(mapPost(result.post, result.categoryName));
+    if (result) return mapPost(result.post, result.categoryName);
+  } catch {
+    // fall through
+  }
+
+  return fallback;
+}
+
+router.get("/blog/categories", async (req, res): Promise<void> => {
+  try {
+    const refresh = BlogRefreshQuery.safeParse(req.query);
+    const forceRefresh =
+      refresh.success &&
+      (refresh.data.refreshSheet === "1" || refresh.data.refreshSheet === "true");
+
+    res.json(await resolveCategories(forceRefresh));
+  } catch {
+    res.json({ categories: listJournalFallbackCategories() });
+  }
+});
+
+router.get("/blog", async (req, res): Promise<void> => {
+  try {
+    const parsed = ListBlogPostsQueryParams.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
       return;
     }
+
+    const { category, limit = 12, offset = 0 } = parsed.data;
+    const refresh = BlogRefreshQuery.safeParse(req.query);
+    const forceRefresh =
+      refresh.success &&
+      (refresh.data.refreshSheet === "1" || refresh.data.refreshSheet === "true");
+
+    res.json(await resolvePostList({ category, limit, offset, forceRefresh }));
   } catch {
-    // fall through to bundled journal JSON
+    const category =
+      typeof req.query.category === "string" ? req.query.category : undefined;
+    const limit = Number(req.query.limit) || 12;
+    const offset = Number(req.query.offset) || 0;
+    res.json(listJournalFallback({ category, limit, offset }));
   }
+});
 
-  const fallback = getJournalFallbackBySlug(params.data.slug);
-  if (!fallback) {
-    res.status(404).json({ error: "Post not found" });
-    return;
+router.get("/blog/:slug", async (req, res): Promise<void> => {
+  try {
+    const params = GetBlogPostParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const refresh = BlogRefreshQuery.safeParse(req.query);
+    const forceRefresh =
+      refresh.success &&
+      (refresh.data.refreshSheet === "1" || refresh.data.refreshSheet === "true");
+
+    const post = await resolvePostBySlug(params.data.slug, forceRefresh);
+    if (!post) {
+      res.status(404).json({ error: "Post not found" });
+      return;
+    }
+    res.json(post);
+  } catch {
+    const slug = typeof req.params.slug === "string" ? req.params.slug : "";
+    const fallback = getJournalFallbackBySlug(slug);
+    if (!fallback) {
+      res.status(404).json({ error: "Post not found" });
+      return;
+    }
+    res.json(fallback);
   }
-
-  res.json(fallback);
 });
 
 router.post("/blog", async (req, res): Promise<void> => {

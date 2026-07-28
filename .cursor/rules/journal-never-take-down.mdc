@@ -1,0 +1,36 @@
+---
+description: Never take down 8 Degree journal/blog — hard production constraint.
+alwaysApply: true
+---
+
+# Never take down the blogs
+
+Production journal at https://8degree.co/blog must stay live. Do not ship changes that empty, 500, or regress `/api/blog`.
+
+## Source of truth
+
+1. **Google Sheet** (default via `JOURNAL_SOURCE` unset / not `database`)
+2. Bundled `journal-import.json` fallback
+3. Postgres `blog_posts` only as last resort / admin writes
+
+Do **not** switch production to Postgres-only blog without a working sheet path and live verification.
+
+## Do not
+
+- Remove or bypass `journal-articles-sheet.ts`, `journal-import-fallback.ts`, or sheet-first routing in `artifacts/api-server/src/routes/blog.ts`
+- Promote a branch that drops sheet journal code in favor of empty DB queries
+- Strip `vercel.json` `functions.api/index.js.includeFiles` for `artifacts/api-server/dist/**` (and journal data)
+- Set production `JOURNAL_SOURCE=database` unless sheet + fallback are proven still serving posts
+- Mark a deploy “done” if `/api/blog` is non-200 or returns `total: 0`
+
+## Before any Matt → production promote involving API / blog / vercel packaging
+
+1. Confirm live `GET https://8degree.co/api/blog?limit=1` returns **200** and `total > 0` (currently ~51)
+2. Confirm `GET /api/blog/categories` returns categories
+3. After deploy, re-run the same checks; if blogs are down, **rollback / fix immediately** — do not leave production empty
+
+## Smoke check
+
+```bash
+pnpm run assert:blog-live
+```

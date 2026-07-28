@@ -141,13 +141,18 @@ const listInventoryQuerySchema = z.object({
   refreshSheet: z.string().optional(),
 });
 
+function isSheetSectionDividerCode(code: string): boolean {
+  const c = code.trim().toLowerCase().replace(/_/g, " ");
+  return /^(website|silent)\s*listings?$/.test(c) || c.includes("website listing") || c.includes("silent listing");
+}
+
 function orderedExternalRows(
   rows: SheetListingRow[],
   channel: "silent" | "website" | undefined,
 ): SheetListingRow[] {
-  let filtered = rows;
+  let filtered = rows.filter((r) => !isSheetSectionDividerCode(r.code));
   if (channel) {
-    filtered = rows.filter((r) => r.channel === channel);
+    filtered = filtered.filter((r) => r.channel === channel);
   }
   return [...filtered].sort(
     (a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code),

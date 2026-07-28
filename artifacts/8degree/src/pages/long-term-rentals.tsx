@@ -161,7 +161,10 @@ export default function LongTermRentalsPage() {
     const listingsPublic = listingsRaw.filter((row) => {
       const vis = row.visibility ?? "active";
       const sale = row.saleStatus ?? "available";
-      return vis !== "draft" && sale !== "sold";
+      if (vis === "draft" || sale === "sold") return false;
+      const code = (row.code || "").toLowerCase();
+      if (code.includes("website_listing") || code.includes("silent_listing")) return false;
+      return true;
     });
 
     const listingsBaseFiltered = listingsPublic.filter((row) => {

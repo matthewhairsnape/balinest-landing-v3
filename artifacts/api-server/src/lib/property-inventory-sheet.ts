@@ -217,12 +217,19 @@ export function parsePropertyInventorySheetCsv(csvText: string): SheetListingRow
     const br = normalizedNullableCell(row, "BR", "br");
     const ba = normalizedNullableCell(row, "BA", "ba");
 
+    // Sheet uses section divider rows like "Website Listing" / "Silent Listing"
+    // with no property fields — never treat those as inventory cards.
+    const sectionHeader =
+      /^(website|silent)\s*listings?$/i.test(codeCell.trim()) ||
+      codeCell.toLowerCase().includes("silent listing") ||
+      codeCell.toLowerCase().includes("website listing");
     if (
-      codeCell.toLowerCase().includes("silent listing") &&
+      sectionHeader &&
       !name &&
       !String(desc).trim() &&
       !String(urlCell).trim() &&
-      !String(redirectUrlCell).trim()
+      !String(redirectUrlCell).trim() &&
+      !imageUrl
     ) {
       continue;
     }
@@ -291,7 +298,9 @@ async function fetchDriveFolderImageUrls(folderId: string): Promise<string[]> {
     });
     if (!res.ok) return [];
     const html = await res.text();
-    const re = /&quot;([a-zA-Z0-9_-]{20,})&quot;[\s\S]{0,220}?&quot;image\/(?:jpeg|jpg|png|webp|gif|heic)&quot;/gim;
+    // Drive HTML sometimes uses literal "…" and sometimes HTML-escaped &quot;…
+    const re =
+      /(?:&quot;|")([a-zA-Z0-9_-]{20,})(?:&quot;|")[\s\S]{0,220}?(?:&quot;|")image\/(?:jpeg|jpg|png|webp|gif|heic)(?:&quot;|")/gim;
     const ids = new Set<string>();
     let m: RegExpExecArray | null;
     while ((m = re.exec(html)) !== null) ids.add(m[1]!);

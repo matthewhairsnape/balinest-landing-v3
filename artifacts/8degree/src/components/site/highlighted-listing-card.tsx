@@ -56,7 +56,12 @@ export function resolveCalendarTenure(ownership: string, leaseYears: string | nu
 }
 
 function thumb(row: PropertyInventoryListing): string | null {
-  return (Array.isArray(row.imageUrls) && row.imageUrls.length > 0 ? row.imageUrls[0] : row.imageUrl) ?? null;
+  const raw =
+    (Array.isArray(row.imageUrls) && row.imageUrls.length > 0 ? row.imageUrls[0] : row.imageUrl) ?? null;
+  if (!raw) return null;
+  // Unresolved Drive folder links are not valid <img> sources.
+  if (/drive\.google\.com\/drive\/folders\//i.test(raw)) return null;
+  return raw;
 }
 
 function formatCardPrice(row: PropertyInventoryListing): string {

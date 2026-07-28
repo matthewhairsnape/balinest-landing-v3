@@ -7,7 +7,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
-      "includeFiles": "artifacts/api-server/dist/**"
+      "includeFiles": "{artifacts/api-server/dist/**,artifacts/api-server/data/**,scripts/data/journal-import.json}"
     }
   },
   "rewrites": [
