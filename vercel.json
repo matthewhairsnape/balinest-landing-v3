@@ -5,8 +5,9 @@
   "outputDirectory": "artifacts/8degree/dist/public",
   "framework": null,
   "functions": {
-    "api/**/*.js": {
-      "maxDuration": 60
+    "api/index.js": {
+      "maxDuration": 60,
+      "includeFiles": "artifacts/api-server/dist/**"
     }
   },
   "rewrites": [
