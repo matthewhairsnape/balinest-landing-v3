@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
+import { SITE_MEDIA } from "@/lib/site-assets";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 const CONTACT_COPY: Record<SiteLanguage, Record<string, string>> = {
@@ -65,12 +66,22 @@ export default function Contact() {
         )}
         path="/contact"
       />
-      <div className="bg-foreground text-background pt-32 pb-16 px-6">
-        <div className="container mx-auto max-w-6xl">
+      <section className="relative w-full overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 min-h-[min(52dvh,520px)] overflow-hidden">
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/75 via-black/55 to-black/35" aria-hidden />
+          <img
+            src={SITE_MEDIA.contactHero}
+            alt=""
+            className="h-full min-h-[min(52dvh,520px)] w-full object-cover object-center"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+        <div className="relative z-20 container mx-auto max-w-6xl px-6 pb-16 pt-32 text-background">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs tracking-[0.3em] uppercase text-primary mb-4"
+            className="mb-4 text-xs uppercase tracking-[0.3em] text-primary"
           >
             {t.letsTalk}
           </motion.p>
@@ -78,12 +89,12 @@ export default function Contact() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-serif text-4xl md:text-6xl leading-tight"
+            className="font-serif text-4xl leading-tight md:text-6xl"
           >
             {t.getInTouch}
           </motion.h1>
         </div>
-      </div>
+      </section>
 
       <div className="container mx-auto max-w-6xl px-6 py-16">
         <div className="grid md:grid-cols-5 gap-16">

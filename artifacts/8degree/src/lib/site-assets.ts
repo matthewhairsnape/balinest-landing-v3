@@ -66,6 +66,9 @@ export const SITE_MEDIA = {
   /** Seller's Agent landing (`/seller-agents`). */
   sellerAgentHero: "/site-media/seller-agent-hero.png",
 
+  /** Contact / enquire page hero (`/contact`). */
+  contactHero: "/site-media/contact-hero.jpg",
+
   /** Legal Guide hero (`/legal-guide`). */
   legalGuideHero: "/site-media/legal-guide-hero.png",
   /** Legal Guide intro panel (lead image under hero). */
