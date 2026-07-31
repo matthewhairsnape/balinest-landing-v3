@@ -6,7 +6,7 @@ import { useListBlogPosts, useListBlogCategories } from "@workspace/api-client-r
 import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
-import { journalFeaturedImageSrc } from "@/lib/journal-featured-image";
+import { journalFeaturedImageSrc, JOURNAL_DEFAULT_FEATURED_IMAGE } from "@/lib/journal-featured-image";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function Blog() {
@@ -186,7 +186,13 @@ export default function Blog() {
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50" />
+                        <img
+                          src={JOURNAL_DEFAULT_FEATURED_IMAGE}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       )}
                       {post.categoryName && (
                         <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] tracking-[0.2em] uppercase px-2 py-1">

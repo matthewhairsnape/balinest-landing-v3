@@ -9,7 +9,7 @@ import {
   type JournalPostDto,
 } from "./journal-import-fallback";
 import {
-  resolveJournalFeaturedImageUrl,
+  resolveJournalFeaturedImageUrlWithDefault,
   rewriteJournalContentHtml,
 } from "./journal-image-url";
 
@@ -319,7 +319,10 @@ function mergeRowWithImport(
     importRow?.excerpt?.trim() ||
     stripHtml(content).slice(0, 500) ||
     row.title;
-  const featuredImageUrl = resolveJournalFeaturedImageUrl(row.featuredImageUrl);
+  const featuredImageUrl = resolveJournalFeaturedImageUrlWithDefault(
+    row.featuredImageUrl,
+    importRow?.featuredImageUrl,
+  );
   const plain = stripHtml(content);
 
   return {

@@ -17,12 +17,23 @@ export function driveJournalThumbnailUrl(fileId: string, size = "w800"): string 
   return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${encodeURIComponent(size)}`;
 }
 
-/** Browser-safe featured image src — matches property listing Drive thumbnails. */
-export function journalFeaturedImageSrc(url: string | null | undefined): string | null {
-  if (!url?.trim()) return null;
+export const JOURNAL_DEFAULT_FEATURED_IMAGE = "/site-media/journal-hero.png";
+
+/** Browser-safe featured image src — Drive thumbnails match property listing cards. */
+export function journalFeaturedImageSrc(url: string | null | undefined): string {
+  if (!url?.trim()) return JOURNAL_DEFAULT_FEATURED_IMAGE;
   const t = url.trim();
+  if (
+    t.startsWith("/journal-media/") ||
+    t.startsWith("/wp-content/") ||
+    /\/wp-content\/uploads\//i.test(t)
+  ) {
+    return JOURNAL_DEFAULT_FEATURED_IMAGE;
+  }
   const driveId = driveFileIdFromJournalImageUrl(t);
   if (driveId) return driveJournalThumbnailUrl(driveId);
   if (/^https:\/\/drive\.google\.com\/thumbnail/i.test(t)) return t;
-  return /^https?:\/\//i.test(t) ? t : null;
+  if (t.startsWith("/site-media/")) return t;
+  if (/^https?:\/\//i.test(t)) return t;
+  return JOURNAL_DEFAULT_FEATURED_IMAGE;
 }

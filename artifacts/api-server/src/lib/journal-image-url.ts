@@ -30,9 +30,31 @@ export function driveThumbnailUrl(fileId: string, size = "w1200"): string {
   return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${encodeURIComponent(size)}`;
 }
 
+/** Shown when a post has no Drive featured image in the sheet or import bundle. */
+export const JOURNAL_DEFAULT_FEATURED_IMAGE = "/site-media/journal-hero.png";
+
 /** Same-origin proxy when bundled API routes are available. */
 export function inventoryThumbUrl(fileId: string): string {
   return `/api/inventory/thumb/${encodeURIComponent(fileId)}`;
+}
+
+/** Resolve a featured image to a browser-loadable URL (Drive thumbnail), or null. */
+export function resolveJournalFeaturedImageUrl(
+  ...candidates: Array<string | null | undefined>
+): string | null {
+  for (const candidate of candidates) {
+    if (!candidate?.trim()) continue;
+    const driveId = driveFileIdFromFeaturedUrl(candidate);
+    if (driveId) return driveThumbnailUrl(driveId);
+  }
+  return null;
+}
+
+/** Always returns a working thumbnail — Drive when available, otherwise journal hero. */
+export function resolveJournalFeaturedImageUrlWithDefault(
+  ...candidates: Array<string | null | undefined>
+): string {
+  return resolveJournalFeaturedImageUrl(...candidates) ?? JOURNAL_DEFAULT_FEATURED_IMAGE;
 }
 
 export function journalUploadRelativePath(url: string | null | undefined): string | null {
@@ -68,14 +90,6 @@ export function resolveJournalImageUrl(url: string | null | undefined): string |
     return `${JOURNAL_MEDIA_API_PREFIX}/${trimmed.slice(JOURNAL_MEDIA_SERVE_PREFIX.length + 1)}`;
   }
   return trimmed;
-}
-
-/** Featured images come from Google Drive sheet links only (no WordPress / journal-media fallback). */
-export function resolveJournalFeaturedImageUrl(url: string | null | undefined): string | null {
-  if (!url?.trim()) return null;
-  const driveId = driveFileIdFromFeaturedUrl(url);
-  if (driveId) return driveThumbnailUrl(driveId);
-  return null;
 }
 
 export function rewriteJournalContentHtml(html: string): string {

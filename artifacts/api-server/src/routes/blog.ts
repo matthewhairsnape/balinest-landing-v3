@@ -29,7 +29,7 @@ import {
   useSheetAsJournalSource,
   clearJournalArticlesSheetCache,
 } from "../lib/journal-articles-sheet";
-import { resolveJournalFeaturedImageUrl, rewriteJournalContentHtml } from "../lib/journal-image-url";
+import { resolveJournalFeaturedImageUrlWithDefault, rewriteJournalContentHtml } from "../lib/journal-image-url";
 
 const router = Router();
 
@@ -369,7 +369,7 @@ function mapPost(
     slug: p.slug,
     excerpt: p.excerpt,
     content: rewriteJournalContentHtml(p.content),
-    featuredImageUrl: resolveJournalFeaturedImageUrl(p.featuredImageUrl),
+    featuredImageUrl: resolveJournalFeaturedImageUrlWithDefault(p.featuredImageUrl),
     author: p.author,
     categoryId: p.categoryId ?? null,
     categoryName: categoryName ?? null,
