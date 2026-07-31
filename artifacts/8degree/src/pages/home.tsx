@@ -8,7 +8,7 @@ import { PortfolioShowcase } from "@/components/site/PortfolioShowcase";
 import { FeaturedInventoryStrip } from "@/components/site/FeaturedInventoryStrip";
 import { PropertySearchPanel } from "@/components/site/PropertySearchPanel";
 import { TopAreaImage } from "@/components/site/TopAreaImage";
-import { useGetFeaturedProjects } from "@workspace/api-client-react";
+import { useGetFeaturedProjects, useListBlogPosts } from "@workspace/api-client-react";
 import {
   Carousel,
   CarouselContent,
@@ -32,6 +32,7 @@ import {
   HOME_TESTIMONIALS_BAND,
 } from "@/lib/home-section-surfaces";
 import { HOME_COPY } from "@/lib/i18n/home-copy";
+import { journalFeaturedImageSrc, JOURNAL_DEFAULT_FEATURED_IMAGE } from "@/lib/journal-featured-image";
 
 type AdvantageStatRow = { value: string; description: string };
 
@@ -68,31 +69,6 @@ const ADVANTAGE_STATS: Record<SiteLanguage, AdvantageStatRow[]> = {
     { value: "Off-market", description: "Secici yatirim firsatlari" },
   ],
 };
-
-/** Homepage journal row — placeholder cards; edit here or swap for `useListBlogPosts` data later. */
-const JOURNAL_CARD_TEMPLATES: { id: string; tag: string; title: string; imageUrl: string; href: string }[] = [
-  {
-    id: "journal-tpl-1",
-    tag: "Buying & Selling Guides, Investment Tips",
-    title: "Journal article title (template) — replace copy and `href` in home.tsx.",
-    imageUrl: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1000&q=80",
-    href: "/blog",
-  },
-  {
-    id: "journal-tpl-2",
-    tag: "Investment Tips",
-    title: "Second story headline placeholder.",
-    imageUrl: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=1000&q=80",
-    href: "/blog",
-  },
-  {
-    id: "journal-tpl-3",
-    tag: "Buying & Selling Guides, Investment Tips",
-    title: "Third story headline placeholder.",
-    imageUrl: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=1000&q=80",
-    href: "/blog",
-  },
-];
 
 type FaqItem = { id: string; q: string; a: string };
 
@@ -292,6 +268,8 @@ export default function Home() {
   const language = useSiteLanguage();
   const t = HOME_COPY[language];
   const { data: featuredProjectsData } = useGetFeaturedProjects();
+  const { data: latestJournalData, isLoading: latestJournalLoading } = useListBlogPosts({ limit: 3 });
+  const latestJournalPosts = latestJournalData?.posts ?? [];
   const faqItems = (FAQ_ITEMS[language]?.length ? FAQ_ITEMS[language] : FAQ_ITEMS.en) satisfies FaqItem[];
   const [openFaqId, setOpenFaqId] = useState<string | null>(faqItems[0]?.id ?? null);
 
@@ -429,27 +407,46 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-            {JOURNAL_CARD_TEMPLATES.map((card) => (
-              <Link key={card.id} href={card.href} className="group block">
-                <article className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted">
-                  <img
-                    src={card.imageUrl}
-                    alt={card.title}
-                    className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.03]"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-transparent" aria-hidden />
-                  <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
-                    <p className="flex items-start gap-2 text-left text-[11px] font-medium uppercase leading-snug tracking-[0.14em] text-white/90">
-                      <Tag className="mt-0.5 size-3.5 shrink-0 opacity-90" aria-hidden />
-                      <span>{card.tag}</span>
-                    </p>
-                    <h3 className="mt-3 text-left font-sans text-lg font-bold leading-snug tracking-tight text-white md:text-xl">{card.title}</h3>
-                  </div>
-                </article>
-              </Link>
-            ))}
+            {latestJournalLoading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-muted" />
+              ))
+            ) : latestJournalPosts.length === 0 ? (
+              <p className="col-span-full text-center text-muted-foreground">{t.latestNewsSub}</p>
+            ) : (
+              latestJournalPosts.map((post) => {
+                const imageSrc = journalFeaturedImageSrc(post.featuredImageUrl);
+                return (
+                  <Link key={post.id} href={`/blog/${post.slug}`} className="group block">
+                    <article className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted">
+                      <img
+                        src={imageSrc}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.03]"
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.src = JOURNAL_DEFAULT_FEATURED_IMAGE;
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-transparent" aria-hidden />
+                      <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
+                        {post.categoryName ? (
+                          <p className="flex items-start gap-2 text-left text-[11px] font-medium uppercase leading-snug tracking-[0.14em] text-white/90">
+                            <Tag className="mt-0.5 size-3.5 shrink-0 opacity-90" aria-hidden />
+                            <span>{post.categoryName}</span>
+                          </p>
+                        ) : null}
+                        <h3 className="mt-3 text-left font-sans text-lg font-bold leading-snug tracking-tight text-white md:text-xl">
+                          {post.title}
+                        </h3>
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })
+            )}
           </div>
 
           <div className="mt-10 flex justify-center">
