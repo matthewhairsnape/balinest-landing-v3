@@ -397,6 +397,47 @@ router.post("/inventory/listings/revalidate-sheet", (_req, res): void => {
   res.json({ ok: true });
 });
 
+const DRIVE_THUMB_FETCH_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept: "image/*,*/*;q=0.8",
+};
+
+/** Proxy Google Drive thumbnails for journal featured images and other sheet assets. */
+router.get("/inventory/thumb/:fileId", async (req, res): Promise<void> => {
+  const raw = req.params.fileId;
+  const fileId = (Array.isArray(raw) ? raw[0] : raw ?? "").trim();
+  if (!fileId || !/^[a-zA-Z0-9_-]{10,}$/.test(fileId)) {
+    res.status(400).json({ error: "Invalid file id" });
+    return;
+  }
+
+  const szParam = typeof req.query.sz === "string" ? req.query.sz.trim() : "";
+  const sz = szParam || "w1200";
+  const driveUrl = `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${encodeURIComponent(sz)}`;
+
+  try {
+    const upstream = await fetch(driveUrl, {
+      redirect: "follow",
+      headers: DRIVE_THUMB_FETCH_HEADERS,
+    });
+    if (!upstream.ok) {
+      res.status(upstream.status === 404 ? 404 : 502).end();
+      return;
+    }
+
+    const contentType = upstream.headers.get("content-type");
+    if (contentType?.startsWith("image/")) {
+      res.setHeader("Content-Type", contentType);
+    }
+    res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+    res.send(Buffer.from(await upstream.arrayBuffer()));
+  } catch (err) {
+    logger.warn({ err, fileId }, "inventory thumb: drive fetch failed");
+    res.status(502).end();
+  }
+});
+
 const patchListingMetaBodySchema = z
   .object({
     featured: z.boolean().optional(),

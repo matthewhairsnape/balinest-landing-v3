@@ -58,6 +58,7 @@ export default function Blog() {
     },
   }[language];
   const [activeCategory, setActiveCategory] = useState<string>("");
+  const [brokenImages, setBrokenImages] = useState<Set<number>>(() => new Set());
   const { data, isLoading } = useListBlogPosts({ limit: 20 });
   const { data: catData } = useListBlogCategories();
 
@@ -164,11 +165,21 @@ export default function Blog() {
                 <Link href={`/blog/${post.slug}`}>
                   <div className="group cursor-pointer">
                     <div className="relative aspect-video overflow-hidden bg-muted mb-4">
-                      {post.featuredImageUrl ? (
+                      {post.featuredImageUrl && !brokenImages.has(post.id) ? (
                         <img
                           src={post.featuredImageUrl}
-                          alt={post.title}
+                          alt=""
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          loading="lazy"
+                          decoding="async"
+                          onError={() => {
+                            setBrokenImages((prev) => {
+                              if (prev.has(post.id)) return prev;
+                              const next = new Set(prev);
+                              next.add(post.id);
+                              return next;
+                            });
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50" />

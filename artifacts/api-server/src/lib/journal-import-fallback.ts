@@ -5,7 +5,7 @@ import { isDatabaseConfigured, getDb } from "@workspace/db";
 import { blogCategoriesTable, blogPostsTable } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { logger } from "./logger";
-import { resolveJournalImageUrl, rewriteJournalContentHtml } from "./journal-image-url";
+import { resolveJournalFeaturedImageUrl, rewriteJournalContentHtml } from "./journal-image-url";
 
 export type JournalImportRow = {
   slug: string;
@@ -76,7 +76,7 @@ export function journalRowsToDtos(rows: JournalImportRow[]): JournalPostDto[] {
     slug: row.slug,
     excerpt: row.excerpt,
     content: rewriteJournalContentHtml(row.content),
-    featuredImageUrl: resolveJournalImageUrl(row.featuredImageUrl),
+    featuredImageUrl: resolveJournalFeaturedImageUrl(row.featuredImageUrl),
     author: row.author,
     categoryId: null,
     categoryName: row.categoryName,

@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { createReadStream, existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { z } from "zod";
 import { db, isDatabaseConfigured } from "@workspace/db";
@@ -25,9 +28,45 @@ import {
   loadArticlesFromGoogleSheet,
   useSheetAsJournalSource,
 } from "../lib/journal-articles-sheet";
-import { resolveJournalImageUrl, rewriteJournalContentHtml } from "../lib/journal-image-url";
+import { resolveJournalFeaturedImageUrl, rewriteJournalContentHtml } from "../lib/journal-image-url";
 
 const router = Router();
+
+function journalMediaRoots(): string[] {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  return [
+    path.resolve(here, "../data/journal-media"),
+    path.resolve(process.cwd(), "artifacts/api-server/data/journal-media"),
+  ];
+}
+
+function resolveBundledJournalMediaPath(relativePath: string): string | null {
+  const rel = relativePath.replace(/^\/+/, "").replace(/\\/g, "/");
+  if (!rel || rel.includes("..")) return null;
+  for (const root of journalMediaRoots()) {
+    const full = path.resolve(root, rel);
+    if (!full.startsWith(`${root}${path.sep}`) && full !== root) continue;
+    if (existsSync(full)) return full;
+  }
+  return null;
+}
+
+/** Serve bundled legacy WordPress journal images when present under `artifacts/api-server/data/journal-media/`. */
+router.get("/journal/media/*splat", (req, res): void => {
+  const raw = req.params.splat;
+  const rel = (Array.isArray(raw) ? raw.join("/") : raw ?? "").trim();
+  if (!rel) {
+    res.status(400).end();
+    return;
+  }
+  const filePath = resolveBundledJournalMediaPath(rel);
+  if (!filePath) {
+    res.status(404).end();
+    return;
+  }
+  res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+  createReadStream(filePath).pipe(res);
+});
 
 const BlogRefreshQuery = z.object({
   refreshSheet: z.string().optional(),
@@ -324,7 +363,7 @@ function mapPost(
     slug: p.slug,
     excerpt: p.excerpt,
     content: rewriteJournalContentHtml(p.content),
-    featuredImageUrl: resolveJournalImageUrl(p.featuredImageUrl),
+    featuredImageUrl: resolveJournalFeaturedImageUrl(p.featuredImageUrl),
     author: p.author,
     categoryId: p.categoryId ?? null,
     categoryName: categoryName ?? null,

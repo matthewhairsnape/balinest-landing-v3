@@ -8,7 +8,10 @@ import {
   type JournalImportRow,
   type JournalPostDto,
 } from "./journal-import-fallback";
-import { resolveJournalImageUrl, rewriteJournalContentHtml } from "./journal-image-url";
+import {
+  resolveJournalFeaturedImageUrl,
+  rewriteJournalContentHtml,
+} from "./journal-image-url";
 
 /** Shipped CSV when Google Sheet export is unreachable in local dev. */
 const DEV_JOURNAL_ARTICLES_FALLBACK_CSV = "dev-journal-articles-fallback.csv";
@@ -162,10 +165,7 @@ function categorySlugFromName(name: string): string {
 }
 
 function resolveDriveFeaturedImage(url: string | null | undefined): string | null {
-  if (!url?.trim()) return null;
-  const id = driveFileIdFromUrl(url);
-  if (id) return `/api/inventory/thumb/${id}`;
-  return url.trim();
+  return resolveJournalFeaturedImageUrl(url);
 }
 
 function cell(row: Record<string, string>, ...keys: string[]): string {
@@ -323,7 +323,7 @@ function mergeRowWithImport(
     importRow?.excerpt?.trim() ||
     stripHtml(content).slice(0, 500) ||
     row.title;
-  const featuredImageUrl = resolveJournalImageUrl(
+  const featuredImageUrl = resolveJournalFeaturedImageUrl(
     row.featuredImageUrl ?? importRow?.featuredImageUrl ?? null,
   );
   const plain = stripHtml(content);
