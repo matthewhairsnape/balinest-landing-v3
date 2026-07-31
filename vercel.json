@@ -12,6 +12,11 @@
   },
   "redirects": [
     {
+      "source": "/api/inventory/thumb/:fileId",
+      "destination": "https://drive.google.com/thumbnail?id=:fileId&sz=w1200",
+      "permanent": false
+    },
+    {
       "source": "/8-degree-real-estate-x-balinest-villa",
       "destination": "/balinest/",
       "permanent": true
