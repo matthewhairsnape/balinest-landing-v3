@@ -1,15 +1,12 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="8 Degree">
-  <rect width="180" height="180" fill="#01514E"/>
-  <g stroke="#F2F0EB" stroke-width="3" stroke-linecap="square" opacity="0.92">
-    <line x1="90" y1="18" x2="90" y2="162"/>
-    <line x1="18" y1="90" x2="162" y2="90"/>
-  </g>
+  <rect width="180" height="180" rx="40" ry="40" fill="#01514E"/>
   <text
-    x="112"
-    y="64"
-    fill="#F2F0EB"
+    x="90"
+    y="102"
+    fill="#FFFFFF"
+    text-anchor="middle"
     font-family="Montserrat, Arial, Helvetica, sans-serif"
-    font-size="40"
+    font-size="72"
     font-weight="700"
   >8°</text>
 </svg>
