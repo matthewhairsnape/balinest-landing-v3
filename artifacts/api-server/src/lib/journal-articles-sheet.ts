@@ -323,9 +323,7 @@ function mergeRowWithImport(
     importRow?.excerpt?.trim() ||
     stripHtml(content).slice(0, 500) ||
     row.title;
-  const featuredImageUrl = resolveJournalFeaturedImageUrl(
-    row.featuredImageUrl ?? importRow?.featuredImageUrl ?? null,
-  );
+  const featuredImageUrl = resolveJournalFeaturedImageUrl(row.featuredImageUrl);
   const plain = stripHtml(content);
 
   return {

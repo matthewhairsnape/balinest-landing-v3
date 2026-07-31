@@ -26,6 +26,11 @@ export function driveFileIdFromFeaturedUrl(url: string | null | undefined): stri
   return null;
 }
 
+export function driveThumbnailUrl(fileId: string, size = "w1200"): string {
+  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${encodeURIComponent(size)}`;
+}
+
+/** Same-origin proxy when bundled API routes are available. */
 export function inventoryThumbUrl(fileId: string): string {
   return `/api/inventory/thumb/${encodeURIComponent(fileId)}`;
 }
@@ -65,12 +70,12 @@ export function resolveJournalImageUrl(url: string | null | undefined): string |
   return trimmed;
 }
 
-/** Resolve featured images for API responses — Drive files via thumb proxy, legacy uploads via journal media API. */
+/** Featured images come from Google Drive sheet links only (no WordPress / journal-media fallback). */
 export function resolveJournalFeaturedImageUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;
   const driveId = driveFileIdFromFeaturedUrl(url);
-  if (driveId) return inventoryThumbUrl(driveId);
-  return resolveJournalImageUrl(url);
+  if (driveId) return driveThumbnailUrl(driveId);
+  return null;
 }
 
 export function rewriteJournalContentHtml(html: string): string {
