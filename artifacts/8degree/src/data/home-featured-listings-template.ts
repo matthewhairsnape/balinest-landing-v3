@@ -1,12 +1,7 @@
 /**
- * Homepage “Highlighted listings” cards — edit this file with your real listings.
- *
- * Switch data source in `HOME_FEATURED_LISTINGS_MODE` below:
- * - `"template"` — always uses the array below (good for design / before inventory API is ready).
- * - `"api"` — loads from your inventory API; falls back to this template if the API returns nothing.
+ * Legacy design-time listing cards (DEMO-*). Not shown on the public site —
+ * FeaturedInventoryStrip loads real inventory from the API only.
  */
-
-export const HOME_FEATURED_LISTINGS_MODE = "api" as "template" | "api";
 
 export type HomeFeaturedListingTemplate = {
   /** Stable id for React keys */

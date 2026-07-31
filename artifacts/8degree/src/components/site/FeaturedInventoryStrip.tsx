@@ -3,11 +3,6 @@ import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import type { PropertyInventoryListing } from "@workspace/api-client-react";
 import { useListInventoryListings } from "@workspace/api-client-react";
-import {
-  HOME_FEATURED_LISTINGS_MODE,
-  HOME_FEATURED_LISTINGS_TEMPLATE,
-  type HomeFeaturedListingTemplate,
-} from "@/data/home-featured-listings-template";
 import { HOME_LISTINGS_BAND } from "@/lib/home-section-surfaces";
 import {
   FeaturedListingCard,
@@ -31,7 +26,7 @@ export type FeaturedInventoryStripProps = {
   viewAllHref?: string;
   /** `overlapHero` tucks under the homepage hero; `standalone` is for the Bali properties page. */
   sectionVariant?: keyof typeof sectionSurface;
-  /** When true, the section title and subtitle are not rendered (e.g. projects page). Homepage omits this. */
+  /** When true, the section title and subtitle are not rendered (e.g. projects page). */
   hideHeading?: boolean;
   /** Max cards to show (homepage uses default 6; projects strip uses 9 for a 3×3 grid). */
   maxCards?: number;
@@ -39,32 +34,43 @@ export type FeaturedInventoryStripProps = {
   sectionBackgroundColor?: string;
 };
 
-function templateToCard(t: HomeFeaturedListingTemplate, idx: number): FeaturedCardModel {
-  const showGreatDeal =
-    t.showGreatDeal !== undefined ? t.showGreatDeal : Boolean(t.featured) || idx >= 2;
-  return {
-    id: t.id,
-    href: t.href,
-    code: t.code,
-    title: t.title,
-    imageUrl: t.imageUrl,
-    imageAlt: t.title,
-    area: t.location,
-    priceDisplay: t.priceDisplay,
-    ownership: t.ownership,
-    bedrooms: t.bedrooms,
-    buildingSqm: t.buildingSqm?.trim() ? t.buildingSqm : null,
-    landSqm: t.landSqm?.trim() ? t.landSqm : null,
-    leaseYears: t.leaseYears?.trim() ? t.leaseYears : null,
-    featured: Boolean(t.featured),
-    categoryLabel: t.category ?? "Residential",
-    showGreatDeal,
-    externalListingUrl: null,
-  };
-}
-
 const viewAllCtaClassName =
   "group inline-flex items-center gap-2 rounded-full border border-[#1c1917]/25 bg-white/80 px-6 py-3 text-xs font-medium uppercase tracking-[0.28em] text-primary shadow-sm backdrop-blur-sm transition-colors hover:border-[#01514E] hover:bg-white";
+
+function ListingCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white/60 shadow-sm">
+      <div className="aspect-[16/10] animate-pulse bg-[#d8d4ce]/80" />
+      <div className="space-y-3 px-5 py-4">
+        <div className="h-3 w-[65%] animate-pulse rounded bg-[#1c1917]/10" />
+        <div className="h-5 w-full animate-pulse rounded bg-[#1c1917]/10" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-[#1c1917]/10" />
+      </div>
+    </div>
+  );
+}
+
+function inventoryToFeaturedCards(
+  listings: PropertyInventoryListing[],
+  slots: number,
+): FeaturedCardModel[] {
+  const eligible = listings.filter((row) => {
+    const vis = row.visibility ?? "active";
+    const sale = row.saleStatus ?? "available";
+    if (vis === "draft" || sale === "sold") return false;
+    const code = (row.code || "").toLowerCase();
+    if (code.includes("website_listing") || code.includes("silent_listing")) return false;
+    const img = row.imageUrl || (Array.isArray(row.imageUrls) ? row.imageUrls[0] : null);
+    if (!img) return false;
+    if (/drive\.google\.com\/drive\/folders\//i.test(img)) return false;
+    return true;
+  });
+
+  return [...eligible]
+    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
+    .slice(0, slots)
+    .map((row, idx) => inventoryRowToFeaturedModel(row, idx));
+}
 
 export function FeaturedInventoryStrip({
   title,
@@ -77,44 +83,25 @@ export function FeaturedInventoryStrip({
   sectionBackgroundColor = HOME_LISTINGS_BAND,
 }: FeaturedInventoryStripProps) {
   const slots = Math.max(1, Math.min(maxCards, 24));
-  const useApi = HOME_FEATURED_LISTINGS_MODE === "api";
 
-  const { data, isError } = useListInventoryListings(
-    { channel: "website", limit: 200, offset: 0 },
-    { query: { enabled: useApi } },
-  );
+  const { data, isError, isLoading, isFetching } = useListInventoryListings({
+    channel: "website",
+    limit: 200,
+    offset: 0,
+  });
+
+  const waitingForListings = isLoading || (isFetching && !data?.listings?.length);
 
   const cards = useMemo((): FeaturedCardModel[] => {
-    const templateCards = HOME_FEATURED_LISTINGS_TEMPLATE.slice(0, slots).map(templateToCard);
-
-    if (!useApi || isError || !data?.listings?.length) {
-      return templateCards;
+    if (waitingForListings || isError || !data?.listings?.length) {
+      return [];
     }
+    return inventoryToFeaturedCards(data.listings, slots);
+  }, [waitingForListings, isError, data, slots]);
 
-    const eligible = data.listings.filter((row) => {
-      const vis = row.visibility ?? "active";
-      const sale = row.saleStatus ?? "available";
-      if (vis === "draft" || sale === "sold") return false;
-      const code = (row.code || "").toLowerCase();
-      if (code.includes("website_listing") || code.includes("silent_listing")) return false;
-      // Prefer real photo URLs; skip unresolved Drive folder links on the homepage strip.
-      const img = row.imageUrl || (Array.isArray(row.imageUrls) ? row.imageUrls[0] : null);
-      if (!img) return false;
-      if (/drive\.google\.com\/drive\/folders\//i.test(img)) return false;
-      return true;
-    });
-
-    if (eligible.length === 0) {
-      return templateCards;
-    }
-
-    return [...eligible]
-      .sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
-      .slice(0, slots)
-      .map((row: PropertyInventoryListing, idx: number) => inventoryRowToFeaturedModel(row, idx));
-  }, [useApi, data, isError, slots]);
-
-  if (cards.length === 0) return null;
+  if (!waitingForListings && cards.length === 0) {
+    return null;
+  }
 
   return (
     <section
@@ -134,24 +121,26 @@ export function FeaturedInventoryStrip({
         )}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
-          {cards.map((row, idx) => (
-            <FeaturedListingCard key={row.id} model={row} idx={idx} />
-          ))}
+          {waitingForListings
+            ? Array.from({ length: slots }, (_, i) => <ListingCardSkeleton key={i} />)
+            : cards.map((row, idx) => <FeaturedListingCard key={row.id} model={row} idx={idx} />)}
         </div>
 
-        <div className="mt-10 flex justify-center md:mt-14">
-          {viewAllHref.startsWith("#") ? (
-            <a href={viewAllHref} className={viewAllCtaClassName}>
-              {viewAllLabel}
-              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
-            </a>
-          ) : (
-            <Link href={viewAllHref} className={viewAllCtaClassName}>
-              {viewAllLabel}
-              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
-            </Link>
-          )}
-        </div>
+        {!waitingForListings && cards.length > 0 ? (
+          <div className="mt-10 flex justify-center md:mt-14">
+            {viewAllHref.startsWith("#") ? (
+              <a href={viewAllHref} className={viewAllCtaClassName}>
+                {viewAllLabel}
+                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </a>
+            ) : (
+              <Link href={viewAllHref} className={viewAllCtaClassName}>
+                {viewAllLabel}
+                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </Link>
+            )}
+          </div>
+        ) : null}
       </div>
     </section>
   );
