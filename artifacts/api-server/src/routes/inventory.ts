@@ -12,10 +12,12 @@ import {
 import {
   clearPropertyInventorySheetCache,
   loadListingsFromGoogleSheet,
+  resolveDriveFolderImagesForRows,
   useSheetAsInventorySource,
 } from "../lib/property-inventory-sheet";
 import type { SheetListingRow } from "../lib/property-inventory-sheet";
 import { logger } from "../lib/logger";
+import { parseListingPriceUsd } from "../../../shared/listing-price";
 import {
   absoluteSiteUrl,
   buildListingOgDescription,
@@ -169,16 +171,18 @@ function orderedExternalRows(
   );
 }
 
-function jsonFromExternalRows(
+async function jsonFromExternalRows(
   rows: SheetListingRow[],
   channel: "silent" | "website" | "rentals" | undefined,
   limit: number,
   offset: number,
-): { listings: Array<ReturnType<typeof mapExternalRow>>; total: number } {
+): Promise<{ listings: Array<ReturnType<typeof mapExternalRow>>; total: number }> {
   const filtered = orderedExternalRows(rows, channel);
   const total = filtered.length;
-  const slice = filtered.slice(offset, offset + limit).map(mapExternalRow);
-  return { listings: slice, total };
+  const sliceRows = filtered.slice(offset, offset + limit);
+  const resolvedRows = await resolveDriveFolderImagesForRows(sliceRows);
+  const listings = resolvedRows.map(mapExternalRow);
+  return { listings, total };
 }
 
 type ListingRowJson = ReturnType<typeof mapExternalRow>;
@@ -194,6 +198,14 @@ function compactListingForListResponse(listing: ListingRowJson): ListingRowJson 
 }
 
 function mapExternalRow(r: SheetListingRow) {
+  // Sheet "Price" column is authoritative; only infer from description when the cell is empty.
+  const estimatePriceUsd =
+    r.estimatePriceUsd?.trim() ||
+    (() => {
+      const inferred = parseListingPriceUsd(null, r.description);
+      return inferred != null ? String(Math.round(inferred)) : null;
+    })();
+
   return {
     id: r.id,
     code: r.code,
@@ -205,7 +217,7 @@ function mapExternalRow(r: SheetListingRow) {
     imageUrls: r.imageUrls,
     ownership: r.ownership,
     location: r.location,
-    estimatePriceUsd: r.estimatePriceUsd,
+    estimatePriceUsd,
     deliveryEstimate: r.deliveryEstimate,
     landSizeSqm: r.landSizeSqm,
     buildingSizeSqm: r.buildingSizeSqm,
@@ -376,7 +388,8 @@ async function findListingByCode(code: string): Promise<ListingRowJson | null> {
     const needle = normalized.toLowerCase();
     const hit = rows.find((r) => r.code.trim().toLowerCase() === needle);
     if (!hit) return null;
-    const merged = await mergeMetaIntoListings([mapExternalRow(hit)]);
+    const [resolvedHit] = await resolveDriveFolderImagesForRows([hit]);
+    const merged = await mergeMetaIntoListings([mapExternalRow(resolvedHit ?? hit)]);
     return merged[0] ?? null;
   };
 
@@ -585,7 +598,7 @@ router.get("/inventory/listings", async (req, res): Promise<void> => {
         forceRefresh: forceExternalRefresh,
       });
       if (fromSheet && fromSheet.length > 0) {
-        const { listings, total } = jsonFromExternalRows(fromSheet, channel, limit, offset);
+        const { listings, total } = await jsonFromExternalRows(fromSheet, channel, limit, offset);
         const merged = await mergeMetaIntoListings(listings);
         if (inventoryListingsDebugEnabled()) {
           logger.info(

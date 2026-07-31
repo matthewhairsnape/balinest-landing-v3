@@ -7,6 +7,7 @@ import { HOME_LISTINGS_BAND } from "@/lib/home-section-surfaces";
 import {
   FeaturedListingCard,
   inventoryRowToFeaturedModel,
+  isInventoryCardEligible,
   type FeaturedCardModel,
 } from "@/components/site/highlighted-listing-card";
 
@@ -56,17 +57,7 @@ function inventoryToFeaturedCards(
   listings: PropertyInventoryListing[],
   slots: number,
 ): FeaturedCardModel[] {
-  const eligible = listings.filter((row) => {
-    const vis = row.visibility ?? "active";
-    const sale = row.saleStatus ?? "available";
-    if (vis === "draft" || sale === "sold") return false;
-    const code = (row.code || "").toLowerCase();
-    if (code.includes("website_listing") || code.includes("silent_listing")) return false;
-    const img = row.imageUrl || (Array.isArray(row.imageUrls) ? row.imageUrls[0] : null);
-    if (!img) return false;
-    if (/drive\.google\.com\/drive\/folders\//i.test(img)) return false;
-    return true;
-  });
+  const eligible = listings.filter(isInventoryCardEligible);
 
   return [...eligible]
     .sort((a, b) => Number(!!b.featured) - Number(!!a.featured))

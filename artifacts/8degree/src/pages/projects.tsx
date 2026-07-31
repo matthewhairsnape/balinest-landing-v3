@@ -6,11 +6,14 @@ import { inferListingArea } from "@/lib/portfolio-listing";
 import {
   DEFAULT_SEARCH_PRICE_MAX_USD,
   defaultPropertySearchPayload,
+  listingMatchesArea,
   listingMatchesSearchFilters,
   matchesListingQuery,
   parsePropertySearchQuery,
+  projectMatchesArea,
   projectMatchesSearchFilters,
   propertySearchFiltersToQuery,
+  resolveAreaName,
   type PropertySearchApplyPayload,
 } from "@/lib/property-search-filters";
 import { Seo } from "@/components/site/Seo";
@@ -183,14 +186,22 @@ export default function Projects() {
     ];
 
     if (search.trim()) {
+      const searchArea = resolveAreaName(search);
       mergedItems = mergedItems.filter((item) => {
         if (item.kind === "project") {
-          const c = item.p;
-          return matchesListingQuery([c.title, c.area, c.shortDescription], search);
+          if (searchArea && projectMatchesArea(item.p, searchArea)) return true;
+          return matchesListingQuery(
+            [item.p.title, item.p.area, item.p.shortDescription],
+            search,
+          );
         }
         const row = item.row;
+        if (searchArea && listingMatchesArea(row, searchArea)) return true;
         const ar = inferListingArea(row.title, row.description);
-        return matchesListingQuery([row.code, row.title, ar], search);
+        return matchesListingQuery(
+          [row.code, row.title, ar, row.description ?? "", row.location ?? ""],
+          search,
+        );
       });
     }
 

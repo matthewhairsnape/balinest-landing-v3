@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { parseListingPriceUsd, parseUsdFromFreeText } from "../../../shared/listing-price";
 
 /**
  * Site-wide currency selector. Stores the user's choice in localStorage and
@@ -70,21 +71,11 @@ export function formatCurrency(amount: number, currency: SiteCurrency): string {
  * "USD 2,800,000" or "$1.4m". Falls back to null if nothing usable is found.
  */
 export function parseUsdNumber(text: string | undefined | null): number | null {
-  if (!text) return null;
-  const cleaned = text.replace(/[^\d.,kKmM]/g, " ").trim();
-  if (!cleaned) return null;
-  // Handle suffix shortcuts (e.g. "1.4m", "950k").
-  const suffix = cleaned.match(/([\d.,]+)\s*([kKmM])\s*$/);
-  if (suffix) {
-    const base = parseFloat(suffix[1].replace(/,/g, ""));
-    if (!Number.isFinite(base)) return null;
-    return suffix[2].toLowerCase() === "m" ? base * 1_000_000 : base * 1_000;
-  }
-  const match = cleaned.match(/[\d.,]+/);
-  if (!match) return null;
-  const num = parseFloat(match[0].replace(/,/g, ""));
-  return Number.isFinite(num) ? num : null;
+  return parseUsdFromFreeText(text);
 }
+
+/** Parse listing price from sheet column + description into canonical USD. */
+export { parseListingPriceUsd };
 
 export function useSiteCurrency(defaultCurrency: SiteCurrency = "USD"): SiteCurrency {
   const [currency, setCurrency] = useState<SiteCurrency>(defaultCurrency);

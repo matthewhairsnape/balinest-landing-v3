@@ -13,7 +13,11 @@ import {
   baliHighlightRectPath,
 } from "@/lib/bali-area-map";
 import { HOME_LISTINGS_BAND } from "@/lib/home-section-surfaces";
-import { type PropertySearchApplyPayload } from "@/lib/property-search-filters";
+import {
+  filterAreaNames,
+  resolveAreaName,
+  type PropertySearchApplyPayload,
+} from "@/lib/property-search-filters";
 
 export type { PropertySearchApplyPayload } from "@/lib/property-search-filters";
 
@@ -50,10 +54,12 @@ function formatPriceInput(value: number, maxBound: number = MAX_PRICE_BOUND) {
 const POPULAR_AREA_NAMES = ["Uluwatu", "Melasti", "Bingin", "Pecatu", "Pandawa", "Ungasan", "Padang Padang"] as const;
 const PROPERTY_AREA_NAMES = ["Uluwatu", "Canggu", "Umalas", "Pererenan", "Others", "Seminyak", "Ubud", "Tabanan"] as const;
 
-function filterAreaNames(names: readonly string[], query: string): string[] {
-  const needle = query.trim().toLowerCase();
-  if (!needle) return [...names];
-  return names.filter((name) => name.toLowerCase().includes(needle));
+function pickAreaFromSearch(
+  filteredPopular: string[],
+  filteredProperty: string[],
+  query: string,
+): string | null {
+  return filteredPopular[0] ?? filteredProperty[0] ?? resolveAreaName(query);
 }
 
 const SEARCH_SELECT_ITEM =
@@ -85,7 +91,7 @@ function mapBedroomsChoice(raw: string | undefined): string {
 
 function mapAreaChoice(selectedArea: string): string {
   if (!selectedArea || selectedArea === "Area") return "all";
-  return selectedArea;
+  return resolveAreaName(selectedArea) ?? selectedArea;
 }
 
 function reversePropertyTypeChoice(mapped: string): string | undefined {
@@ -139,6 +145,7 @@ export function PropertySearchPanel({
   const areaMenuRef = useRef<HTMLDivElement | null>(null);
   const areaLocationSearchRef = useRef<HTMLInputElement | null>(null);
   const priceMenuRef = useRef<HTMLDivElement | null>(null);
+  const wasAreaMenuOpenRef = useRef(false);
 
   const filteredPopularAreas = useMemo(
     () => filterAreaNames(POPULAR_AREA_NAMES, areaLocationSearch),
@@ -150,13 +157,17 @@ export function PropertySearchPanel({
   );
 
   useEffect(() => {
-    if (!isAreaMenuOpen) {
+    if (wasAreaMenuOpenRef.current && !isAreaMenuOpen && areaLocationSearch.trim()) {
+      const resolved = resolveAreaName(areaLocationSearch);
+      if (resolved) setSelectedArea(resolved);
       setAreaLocationSearch("");
-      return;
     }
+    wasAreaMenuOpenRef.current = isAreaMenuOpen;
+
+    if (!isAreaMenuOpen) return;
     const timer = window.setTimeout(() => areaLocationSearchRef.current?.focus(), 0);
     return () => window.clearTimeout(timer);
-  }, [isAreaMenuOpen]);
+  }, [isAreaMenuOpen, areaLocationSearch]);
 
   useEffect(() => {
     if (!initialValues) return;
@@ -195,11 +206,16 @@ export function PropertySearchPanel({
 
   const mapActive = activeBaliMapRegions(selectedArea);
 
+  function resolvedSelectedArea(): string {
+    if (selectedArea && selectedArea !== "Area") return selectedArea;
+    return resolveAreaName(areaLocationSearch) ?? selectedArea;
+  }
+
   function emitApply() {
     const min = parseNumericInput(minPrice) ?? MIN_PRICE_BOUND;
     const max = parseNumericInput(maxPrice) ?? effectivePriceMax;
     onApply?.({
-      area: mapAreaChoice(selectedArea),
+      area: mapAreaChoice(resolvedSelectedArea()),
       propertyType: mapPropertyTypeChoice(propertyTypeChoice),
       bedrooms: mapBedroomsChoice(bedroomsChoice),
       listingQuery: propertyCode.trim(),
@@ -246,10 +262,15 @@ export function PropertySearchPanel({
                     onChange={(e) => setAreaLocationSearch(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key !== "Enter") return;
-                      const pick = filteredPopularAreas[0] ?? filteredPropertyAreas[0];
+                      const pick = pickAreaFromSearch(
+                        filteredPopularAreas,
+                        filteredPropertyAreas,
+                        areaLocationSearch,
+                      );
                       if (!pick) return;
                       e.preventDefault();
                       setSelectedArea(pick);
+                      setAreaLocationSearch("");
                       setIsAreaMenuOpen(false);
                     }}
                     placeholder="Search area…"

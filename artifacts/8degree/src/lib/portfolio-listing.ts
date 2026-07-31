@@ -37,6 +37,13 @@ export function listingPriceLine(description: string): string {
   if (usd) return `From USD ${usd[1].replace(/,/g, "")}`;
   const idr = d.match(/IDR\s*([\d .]+)\s*Billion/i);
   if (idr) return `From IDR ${idr[1].trim()} Billion`;
+  const idrFull = d.match(/IDR\s*([\d][\d.,\s]{7,})/i);
+  if (idrFull) {
+    const n = parseFloat(idrFull[1].replace(/,/g, "").replace(/\s/g, ""));
+    if (Number.isFinite(n) && n >= 100_000_000) {
+      return `From IDR ${n.toLocaleString("en-US")}`;
+    }
+  }
   const idr2 = d.match(/Rp\.?\s*([\d .,]+)/i);
   if (idr2) return `From ${idr2[0].trim()}`;
   const eur = d.match(/EUR\s*([\d,.]+)/i);

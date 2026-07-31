@@ -6,8 +6,10 @@ import type { PropertyInventoryListing } from "@workspace/api-client-react";
 import { inferListingArea } from "@/lib/portfolio-listing";
 import {
   defaultPropertySearchPayload,
+  listingMatchesArea,
   listingMatchesSearchFilters,
   matchesListingQuery,
+  resolveAreaName,
   type PropertySearchApplyPayload,
 } from "@/lib/property-search-filters";
 import { Seo } from "@/components/site/Seo";
@@ -170,9 +172,14 @@ export default function LongTermRentalsPage() {
 
     let rows = sorted;
     if (search.trim()) {
+      const searchArea = resolveAreaName(search);
       rows = sorted.filter((row) => {
+        if (searchArea && listingMatchesArea(row, searchArea)) return true;
         const ar = inferListingArea(row.title, row.description);
-        return matchesListingQuery([row.code, row.title, ar], search);
+        return matchesListingQuery(
+          [row.code, row.title, ar, row.description ?? "", row.location ?? ""],
+          search,
+        );
       });
     }
 

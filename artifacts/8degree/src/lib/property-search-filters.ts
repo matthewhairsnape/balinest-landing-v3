@@ -4,8 +4,93 @@ import {
   inferBedroomsBucket,
   inferListingArea,
 } from "@/lib/portfolio-listing";
+import { parseListingPriceUsd } from "@/lib/site-currency";
 
 export const DEFAULT_SEARCH_PRICE_MAX_USD = 3_000_000;
+
+/** Areas selectable in search UI + portfolio region buckets. */
+export const SEARCH_AREA_NAMES = [
+  "Uluwatu",
+  "Melasti",
+  "Bingin",
+  "Pecatu",
+  "Pandawa",
+  "Ungasan",
+  "Padang Padang",
+  "Canggu",
+  "Umalas",
+  "Pererenan",
+  "Others",
+  "Seminyak",
+  "Ubud",
+  "Tabanan",
+  "Sanur",
+  "Nusa Dua",
+] as const;
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+function fuzzyAreaDistance(needle: string, areaName: string): number {
+  return levenshtein(needle, areaName.toLowerCase());
+}
+
+function maxFuzzyAreaDistance(areaName: string): number {
+  return areaName.length >= 6 ? 2 : 1;
+}
+
+/** Map free-text / typos (e.g. "ulawatu") to a canonical area name. */
+export function resolveAreaName(raw: string): string | null {
+  const needle = raw.trim().toLowerCase();
+  if (!needle || needle === "area" || needle === "all") return null;
+
+  for (const name of SEARCH_AREA_NAMES) {
+    if (name.toLowerCase() === needle) return name;
+  }
+
+  for (const name of SEARCH_AREA_NAMES) {
+    const lower = name.toLowerCase();
+    if (lower.includes(needle) || needle.includes(lower)) return name;
+  }
+
+  let best: { name: string; dist: number } | null = null;
+  for (const name of SEARCH_AREA_NAMES) {
+    const dist = fuzzyAreaDistance(needle, name);
+    if (dist <= maxFuzzyAreaDistance(name) && (!best || dist < best.dist)) {
+      best = { name, dist };
+    }
+  }
+  return best?.name ?? null;
+}
+
+export function filterAreaNames(names: readonly string[], query: string): string[] {
+  const needle = query.trim();
+  if (!needle) return [...names];
+  const lower = needle.toLowerCase();
+  const direct = names.filter((name) => name.toLowerCase().includes(lower));
+  if (direct.length > 0) return direct;
+
+  const resolved = resolveAreaName(needle);
+  if (resolved && (names as readonly string[]).includes(resolved)) {
+    return [resolved];
+  }
+
+  return names.filter((name) => fuzzyAreaDistance(lower, name) <= maxFuzzyAreaDistance(name));
+}
 
 export type PropertySearchApplyPayload = {
   area: string;
@@ -38,7 +123,9 @@ export function propertySearchFiltersToQuery(
   priceMax: number = DEFAULT_SEARCH_PRICE_MAX_USD,
 ): string {
   const params = new URLSearchParams();
-  if (payload.area !== "all") params.set("area", payload.area);
+  if (payload.area !== "all") {
+    params.set("area", resolveAreaName(payload.area) ?? payload.area);
+  }
   if (payload.propertyType !== "all") params.set("type", payload.propertyType);
   if (payload.bedrooms !== "all") params.set("beds", payload.bedrooms);
   if (payload.ownership !== "all") params.set("ownership", payload.ownership);
@@ -59,8 +146,11 @@ export function parsePropertySearchQuery(
   const defaults = defaultPropertySearchPayload(priceMax);
   const minRaw = params.get("minPrice");
   const maxRaw = params.get("maxPrice");
+  const rawArea = params.get("area")?.trim() || defaults.area;
+  const canonicalArea =
+    rawArea === "all" ? "all" : resolveAreaName(rawArea) ?? rawArea;
   return {
-    area: params.get("area")?.trim() || defaults.area,
+    area: canonicalArea,
     propertyType: params.get("type")?.trim() || defaults.propertyType,
     bedrooms: params.get("beds")?.trim() || defaults.bedrooms,
     listingQuery: params.get("q")?.trim() || "",
@@ -72,18 +162,58 @@ export function parsePropertySearchQuery(
 }
 
 export function listingUsdPrice(row: PropertyInventoryListing): number | null {
-  if (row.estimatePriceUsd) {
-    const n = Number(String(row.estimatePriceUsd).replace(/,/g, ""));
-    if (!Number.isNaN(n) && n > 0) return n;
-  }
-  const d = row.description.slice(0, 4000);
-  const usd = d.match(/USD\s*([\d,.]+)\s*(k|K)?/i);
-  if (usd) {
-    let n = Number(usd[1].replace(/,/g, ""));
-    if (usd[2]) n *= 1000;
-    if (!Number.isNaN(n) && n > 0) return n;
-  }
-  return null;
+  return parseListingPriceUsd(row.estimatePriceUsd, row.description);
+}
+
+/** Pick the closest matching listings for a property detail "similar" strip. */
+export function pickSimilarListings(
+  current: PropertyInventoryListing,
+  pool: PropertyInventoryListing[],
+  limit = 3,
+): PropertyInventoryListing[] {
+  const currentArea =
+    current.location?.trim() || inferListingArea(current.title, current.description);
+  const currentBrRaw = current.br?.trim() ? Number(current.br.replace(/\D/g, "")) : NaN;
+  const currentBr = !Number.isNaN(currentBrRaw)
+    ? currentBrRaw
+    : inferBedroomsBucket(current.title, current.description);
+  const currentPrice = listingUsdPrice(current);
+  const currentOwnership = (current.ownership ?? "").trim().toLowerCase();
+
+  const scored = pool
+    .filter(
+      (row) =>
+        row.code.trim().toLowerCase() !== current.code.trim().toLowerCase(),
+    )
+    .map((row) => {
+      let score = 0;
+      const area = row.location?.trim() || inferListingArea(row.title, row.description);
+      if (area && currentArea && area.toLowerCase() === currentArea.toLowerCase()) score += 100;
+
+      const brRaw = row.br?.trim() ? Number(row.br.replace(/\D/g, "")) : NaN;
+      const br = !Number.isNaN(brRaw) ? brRaw : inferBedroomsBucket(row.title, row.description);
+      if (currentBr != null && br != null) {
+        score += Math.max(0, 40 - Math.abs(currentBr - br) * 12);
+      }
+
+      const ownership = (row.ownership ?? "").trim().toLowerCase();
+      if (currentOwnership && ownership && ownership === currentOwnership) score += 25;
+
+      const price = listingUsdPrice(row);
+      if (currentPrice != null && price != null && currentPrice > 0) {
+        const ratio = price / currentPrice;
+        if (ratio >= 0.75 && ratio <= 1.25) score += 30;
+        else if (ratio >= 0.55 && ratio <= 1.45) score += 15;
+      }
+
+      if (row.featured) score += 5;
+      return { row, score };
+    });
+
+  scored.sort(
+    (a, b) => b.score - a.score || a.row.code.localeCompare(b.row.code),
+  );
+  return scored.slice(0, limit).map((s) => s.row);
 }
 
 export function listingMatchesArea(
@@ -91,9 +221,10 @@ export function listingMatchesArea(
   area: string,
 ): boolean {
   if (area === "all") return true;
-  if (inferListingArea(row.title, row.description) === area) return true;
+  const canonical = resolveAreaName(area) ?? area;
+  if (inferListingArea(row.title, row.description) === canonical) return true;
   const hay = `${row.title} ${row.description} ${row.location ?? ""}`.toLowerCase();
-  return hay.includes(area.toLowerCase());
+  return hay.includes(canonical.toLowerCase());
 }
 
 export function listingMatchesBedrooms(
@@ -113,11 +244,12 @@ export function listingMatchesPropertyType(
   row: Pick<PropertyInventoryListing, "title" | "description">,
   propertyType: string,
 ): boolean {
-  if (propertyType === "all") return true;
+  const type = propertyType.trim().toLowerCase();
+  if (!type || type === "all") return true;
   const blob = `${row.title} ${row.description}`.toLowerCase();
-  if (propertyType === "Villa") return /\bvilla\b|\bvillas\b/i.test(blob);
-  if (propertyType === "Apartment") return /\b(apartment|apt|penthouse|condo)\b/i.test(blob);
-  if (propertyType === "Land") return /\b(land|plot|tanah)\b/i.test(blob);
+  if (type === "villa") return /\bvilla\b|\bvillas\b/i.test(blob);
+  if (type === "apartment") return /\b(apartment|apt|penthouse|condo)\b/i.test(blob);
+  if (type === "land") return /\b(land|plot|tanah)\b/i.test(blob);
   return true;
 }
 
@@ -175,8 +307,9 @@ export function listingMatchesSearchFilters(
 
 export function projectMatchesArea(project: Pick<Project, "area">, area: string): boolean {
   if (area === "all") return true;
-  if (project.area === area) return true;
-  return project.area.toLowerCase().includes(area.toLowerCase());
+  const canonical = resolveAreaName(area) ?? area;
+  if (project.area === canonical) return true;
+  return project.area.toLowerCase().includes(canonical.toLowerCase());
 }
 
 export function projectMatchesBedrooms(project: Pick<Project, "bedroomsMin" | "bedroomsMax">, bedrooms: string): boolean {
@@ -244,11 +377,31 @@ export function projectMatchesSearchFilters(
   return true;
 }
 
+export function normalizeListingCode(raw: string): string {
+  return raw.replace(/[\s_-]/g, "").toLowerCase();
+}
+
 export function matchesListingQuery(
   parts: string[],
   listingQuery: string,
 ): boolean {
   if (!listingQuery.trim()) return true;
-  const q = listingQuery.toLowerCase();
-  return parts.join(" ").toLowerCase().includes(q);
+  const q = listingQuery.trim().toLowerCase();
+  const hay = parts.filter(Boolean).join(" ").toLowerCase();
+  if (hay.includes(q)) return true;
+
+  const qCode = normalizeListingCode(listingQuery);
+  if (qCode.length >= 2) {
+    for (const part of parts) {
+      if (!part) continue;
+      if (normalizeListingCode(part).includes(qCode)) return true;
+    }
+  }
+
+  const asArea = resolveAreaName(listingQuery);
+  if (asArea) {
+    return hay.includes(asArea.toLowerCase());
+  }
+
+  return false;
 }

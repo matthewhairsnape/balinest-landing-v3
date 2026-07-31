@@ -133,6 +133,15 @@ function nullableCell(row: Record<string, string>, ...keys: string[]): string | 
   return null;
 }
 
+/** Normalize sheet "Price" / "ESTIMATE PRICE IN USD" cells to a plain USD integer string. */
+function normalizeSheetPriceUsd(raw: string | null): string | null {
+  if (!raw?.trim()) return null;
+  const cleaned = raw.replace(/,/g, "").replace(/\s/g, "").trim();
+  const n = Number(cleaned);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return String(Math.round(n));
+}
+
 function normalizeHeaderKey(key: string): string {
   return key
     .replace(/[\r\n\t]+/g, " ")
@@ -205,7 +214,13 @@ export function parsePropertyInventorySheetCsv(csvText: string): SheetListingRow
 
   for (let i = 0; i < records.length; i++) {
     const row = records[i] ?? {};
-    const codeCell = normalizedRowGet(row, "Code", "code").trim();
+    const codeCell = normalizedRowGet(
+      row,
+      "Code",
+      "code",
+      "Code  Website Listing",
+      "Code Website Listing",
+    ).trim();
     const name = normalizedRowGet(row, "Name", "name").trim();
     const urlCell = normalizedRowGet(row, "Url", "url", "Link", "link");
     const redirectUrlCell = normalizedRowGet(row, "redirect Url", "redirect_url", "Redirect Url");
@@ -214,7 +229,9 @@ export function parsePropertyInventorySheetCsv(csvText: string): SheetListingRow
     const imageUrl = parseListingUrl(normalizedRowGet(row, "image_url", "Image URL", "imageUrl"));
     const ownership = normalizedNullableCell(row, "OWNERSHIP", "ownership");
     const location = normalizedNullableCell(row, "LOCATION", "location");
-    const estimatePriceUsd = normalizedNullableCell(row, "ESTIMATE PRICE IN USD", "Estimate Price In USD");
+    const estimatePriceUsd = normalizeSheetPriceUsd(
+      normalizedNullableCell(row, "Price", "PRICE", "ESTIMATE PRICE IN USD", "Estimate Price In USD"),
+    );
     const deliveryEstimate = normalizedNullableCell(
       row,
       "Development Status",
@@ -330,24 +347,22 @@ async function fetchDriveFolderImageUrls(folderId: string): Promise<string[]> {
   }
 }
 
-async function enrichRowsWithDriveImages(rows: SheetListingRow[]): Promise<SheetListingRow[]> {
+function collectDriveFolderIdsFromRows(rows: SheetListingRow[]): string[] {
   const folderIds = new Set<string>();
-  const maxFoldersToResolve = Math.max(
-    1,
-    Number(process.env.PROPERTY_INVENTORY_DRIVE_RESOLVE_LIMIT || "60") || 60,
-  );
   for (const row of rows) {
     const folderId = driveFolderIdFromUrl(row.imageUrl);
     if (folderId) folderIds.add(folderId);
-    if (folderIds.size >= maxFoldersToResolve) break;
   }
-  if (folderIds.size === 0) return rows;
+  return [...folderIds];
+}
 
+async function fetchDriveFoldersById(folderIds: string[]): Promise<Map<string, string[]>> {
   const byFolder = new Map<string, string[]>();
-  const ids = [...folderIds];
+  if (folderIds.length === 0) return byFolder;
+
   const concurrency = Math.max(1, Math.min(8, Number(process.env.PROPERTY_INVENTORY_DRIVE_CONCURRENCY || "4") || 4));
-  for (let i = 0; i < ids.length; i += concurrency) {
-    const chunk = ids.slice(i, i + concurrency);
+  for (let i = 0; i < folderIds.length; i += concurrency) {
+    const chunk = folderIds.slice(i, i + concurrency);
     await Promise.all(
       chunk.map(async (folderId) => {
         const urls = await fetchDriveFolderImageUrls(folderId);
@@ -355,8 +370,14 @@ async function enrichRowsWithDriveImages(rows: SheetListingRow[]): Promise<Sheet
       }),
     );
   }
+  return byFolder;
+}
 
-  const out = rows.map((row) => {
+function applyDriveFolderResolution(
+  rows: SheetListingRow[],
+  byFolder: Map<string, string[]>,
+): SheetListingRow[] {
+  return rows.map((row) => {
     const folderId = driveFolderIdFromUrl(row.imageUrl);
     if (!folderId) return row;
     const resolved = byFolder.get(folderId) ?? [];
@@ -367,6 +388,26 @@ async function enrichRowsWithDriveImages(rows: SheetListingRow[]): Promise<Sheet
       imageUrls: resolved,
     };
   });
+}
+
+/** Resolve Google Drive folder URLs to thumbnail URLs for specific listing rows (uses per-folder cache). */
+export async function resolveDriveFolderImagesForRows(rows: SheetListingRow[]): Promise<SheetListingRow[]> {
+  const folderIds = collectDriveFolderIdsFromRows(rows);
+  if (folderIds.length === 0) return rows;
+  const byFolder = await fetchDriveFoldersById(folderIds);
+  return applyDriveFolderResolution(rows, byFolder);
+}
+
+async function enrichRowsWithDriveImages(rows: SheetListingRow[]): Promise<SheetListingRow[]> {
+  const maxFoldersToResolve = Math.max(
+    1,
+    Number(process.env.PROPERTY_INVENTORY_DRIVE_RESOLVE_LIMIT || "60") || 60,
+  );
+  const folderIds = collectDriveFolderIdsFromRows(rows).slice(0, maxFoldersToResolve);
+  if (folderIds.length === 0) return rows;
+
+  const byFolder = await fetchDriveFoldersById(folderIds);
+  const out = applyDriveFolderResolution(rows, byFolder);
   logger.info(
     {
       folderCountResolved: byFolder.size,

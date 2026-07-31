@@ -20,6 +20,7 @@ import {
 import { listingPublicPath } from "@/lib/listing-public-url";
 import { COMMON_COPY } from "@/lib/i18n/common";
 import { useSiteCopy } from "@/lib/site-language";
+import { formatCurrency, parseListingPriceUsd, convertFromUsd, type SiteCurrency } from "@/lib/site-currency";
 
 export const HIGHLIGHTED_CARD_BRAND = "#01514E";
 export const HIGHLIGHTED_CARD_ACCENT = "#e0fdac";
@@ -65,13 +66,23 @@ function thumb(row: PropertyInventoryListing): string | null {
   return raw;
 }
 
-function formatCardPrice(row: PropertyInventoryListing): string {
-  if (row.estimatePriceUsd) {
-    const raw = String(row.estimatePriceUsd).replace(/,/g, "");
-    const n = Number(raw);
-    if (!Number.isNaN(n)) return `USD ${n.toLocaleString("en-US")}`;
-  }
+function formatCardPrice(row: PropertyInventoryListing, currency: SiteCurrency = "USD"): string {
+  const usd = parseListingPriceUsd(row.estimatePriceUsd, row.description);
+  if (usd != null) return formatCurrency(convertFromUsd(usd, currency), currency);
   return listingPriceLine(row.description);
+}
+
+/** Listings suitable for homepage / similar-property cards (active, image resolved). */
+export function isInventoryCardEligible(row: PropertyInventoryListing): boolean {
+  const vis = row.visibility ?? "active";
+  const sale = row.saleStatus ?? "available";
+  if (vis === "draft" || sale === "sold") return false;
+  const code = (row.code || "").toLowerCase();
+  if (code.includes("website_listing") || code.includes("silent_listing")) return false;
+  const img = row.imageUrl || (Array.isArray(row.imageUrls) ? row.imageUrls[0] : null);
+  if (!img) return false;
+  if (/drive\.google\.com\/drive\/folders\//i.test(img)) return false;
+  return true;
 }
 
 function displayBedrooms(row: PropertyInventoryListing): string {
@@ -88,7 +99,11 @@ function categoryBadge(row: PropertyInventoryListing): string {
 }
 
 /** Map an inventory API row to the highlighted card model (homepage / projects). */
-export function inventoryRowToFeaturedModel(row: PropertyInventoryListing, idx: number): FeaturedCardModel {
+export function inventoryRowToFeaturedModel(
+  row: PropertyInventoryListing,
+  idx: number,
+  currency: SiteCurrency = "USD",
+): FeaturedCardModel {
   const img = thumb(row);
   const area = row.location?.trim() || inferListingArea(row.title, row.description);
   const ownership = row.ownership?.trim() || inferListingStatus(row.description);
@@ -102,7 +117,7 @@ export function inventoryRowToFeaturedModel(row: PropertyInventoryListing, idx: 
     imageUrl: img,
     imageAlt: row.title || row.code,
     area,
-    priceDisplay: formatCardPrice(row),
+    priceDisplay: formatCardPrice(row, currency),
     ownership,
     bedrooms: displayBedrooms(row),
     buildingSqm: row.buildingSizeSqm?.trim() ? row.buildingSizeSqm : null,

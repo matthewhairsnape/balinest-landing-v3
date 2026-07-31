@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { parseListingPriceUsd } from "../../../shared/listing-price.js";
 
 export type InventoryChannel = "website" | "rentals" | "silent";
 
@@ -74,12 +75,8 @@ function priceLine(listing: {
   estimatePriceUsd?: string | null;
   description: string;
 }): string | null {
-  if (listing.estimatePriceUsd?.trim()) {
-    const n = listing.estimatePriceUsd.replace(/,/g, "");
-    return `USD ${Number(n).toLocaleString("en-US")}`;
-  }
-  const m = listing.description.match(/USD\s*([\d,.]+)/i);
-  if (m) return `USD ${m[1].replace(/,/g, "")}`;
+  const usd = parseListingPriceUsd(listing.estimatePriceUsd, listing.description);
+  if (usd != null) return `USD ${Math.round(usd).toLocaleString("en-US")}`;
   return null;
 }
 

@@ -5,6 +5,7 @@ import {
   getInventoryListingQueryKey,
   useCreateEnquiry,
   useGetInventoryListing,
+  useListInventoryListings,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,15 +34,18 @@ import {
   convertFromUsd,
   CURRENCY_OPTIONS,
   formatCurrency,
-  parseUsdNumber,
+  parseListingPriceUsd,
   setSiteCurrency,
   type SiteCurrency,
   useSiteCurrency,
 } from "@/lib/site-currency";
 import {
   FeaturedListingCard,
+  inventoryRowToFeaturedModel,
+  isInventoryCardEligible,
   type FeaturedCardModel,
 } from "@/components/site/highlighted-listing-card";
+import { pickSimilarListings } from "@/lib/property-search-filters";
 import {
   buildListingOgDescription,
   listingOgImageSrc,
@@ -571,6 +575,19 @@ export default function ListingDetail() {
       queryKey: getInventoryListingQueryKey(code),
     },
   });
+
+  const similarChannel = useMemo((): "website" | "rentals" | "silent" => {
+    if (data?.listing?.channel === "rentals") return "rentals";
+    if (data?.listing?.channel === "silent") return "silent";
+    if (routeKind === "rentals") return "rentals";
+    if (routeKind === "silent") return "silent";
+    return "website";
+  }, [data?.listing?.channel, routeKind]);
+
+  const { data: similarPoolData, isLoading: similarPoolLoading } = useListInventoryListings(
+    { channel: similarChannel, limit: 200, offset: 0 },
+    { query: { enabled: Boolean(code) && !isPreview } },
+  );
   const createEnquiry = useCreateEnquiry();
   const { toast } = useToast();
 
@@ -629,6 +646,15 @@ export default function ListingDetail() {
     const seed = primary ? [primary, ...others] : [FALLBACK_HERO, ...others];
     return seed.filter((u, i, a) => Boolean(u) && a.indexOf(u) === i);
   }, [listing]);
+
+  const similarCards = useMemo((): FeaturedCardModel[] => {
+    if (!listing || isPreview || !similarPoolData?.listings?.length) return [];
+    const eligible = similarPoolData.listings.filter(isInventoryCardEligible);
+    const picks = pickSimilarListings(listing, eligible, 3);
+    return picks.map((row, idx) => inventoryRowToFeaturedModel(row, idx, currency));
+  }, [listing, isPreview, similarPoolData, currency]);
+
+  const similarLoading = !isPreview && (similarPoolLoading || (apiLoading && !similarPoolData));
 
   /** Lightbox state — null = closed; number = current index in `allImages`. */
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -775,7 +801,6 @@ export default function ListingDetail() {
   }
 
   const area = inferListingArea(listing.title, listing.description);
-  const priceLine = listing.estimatePriceUsd?.trim() || listingPriceLine(listing.description);
   const ownership = listing.ownership?.trim() || inferListingStatus(listing.description) || "—";
   const leaseLabel = inferLeaseYearsLabel(listing.description);
   const primaryImage = galleryUrls(listing)[0] ?? listing.imageUrl ?? null;
@@ -827,14 +852,12 @@ export default function ListingDetail() {
   const zoningVal = listing.zoning?.trim() || "—";
   const livingRoomVal = listing.livingRoom?.trim() || "—";
 
-  // Price card mirrors the navbar currency selector. We assume `priceLine`
-  // is the canonical USD figure (per `listing.estimatePriceUsd`) and convert
-  // on the fly. If the source value isn't parseable we fall back to the raw
-  // string so we never show a broken state.
-  const priceUsd = parseUsdNumber(priceLine);
+  // Price card mirrors the navbar currency selector. Canonical amount is parsed
+  // from the sheet column and/or IDR/USD copy in the description, then converted.
+  const priceUsd = parseListingPriceUsd(listing.estimatePriceUsd, listing.description);
   const priceDisplay = priceUsd != null
     ? formatCurrency(convertFromUsd(priceUsd, currency), currency)
-    : (priceLine || "—");
+    : listingPriceLine(listing.description);
 
   /** 10 stat cards rendered as a 2×5 grid (icon + label + value). */
   const stats: { label: string; value: React.ReactNode; icon: React.ReactNode }[] = [
@@ -1435,11 +1458,7 @@ export default function ListingDetail() {
         );
       })()}
 
-      {/* SIMILAR LISTINGS — reuses the homepage `FeaturedListingCard` so the
-          visual treatment (exclusive pill, category pill, dark/light variants,
-          diamond glyph, great-deal badge, stats footer) stays in lockstep with
-          the rest of the site. Prices are converted into the currency selected
-          in the navbar. ===================================================== */}
+      {(similarLoading || similarCards.length > 0) && (
       <section className="pt-10 pb-14 md:pt-12 md:pb-20">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 md:px-10">
           <div className="mb-10 mx-auto max-w-2xl text-center md:mb-14">
@@ -1451,16 +1470,23 @@ export default function ListingDetail() {
             </p>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
-            {SIMILAR_LISTINGS_DEFAULT.map((s, idx) => (
-              <FeaturedListingCard
-                key={s.id}
-                model={similarToFeaturedModel(s, currency)}
-                idx={idx}
-              />
-            ))}
+            {similarLoading
+              ? Array.from({ length: 3 }, (_, i) => (
+                  <div key={i} className="overflow-hidden rounded-2xl bg-white/60 shadow-sm">
+                    <div className="aspect-[16/10] animate-pulse bg-[#d8d4ce]/80" />
+                    <div className="space-y-3 px-5 py-4">
+                      <div className="h-3 w-[65%] animate-pulse rounded bg-[#1c1917]/10" />
+                      <div className="h-5 w-full animate-pulse rounded bg-[#1c1917]/10" />
+                    </div>
+                  </div>
+                ))
+              : similarCards.map((model, idx) => (
+                  <FeaturedListingCard key={model.id} model={model} idx={idx} />
+                ))}
           </div>
         </div>
       </section>
+      )}
 
       {/* LIGHTBOX ========================================================= */}
       {lightboxIndex !== null && allImages[lightboxIndex] ? (
@@ -1851,108 +1877,6 @@ const NEARBY_DEFAULT: Record<NearbyKey, NearbyPlace[]> = {
     { name: "Pererenan Beach", distance: 650 },
   ],
 };
-
-/**
- * Similar-properties data shape. Minimal seed shape; rendered with the shared
- * homepage `FeaturedListingCard` so the look matches the rest of the site.
- * Swap for a real "GET /properties?area=…&limit=3" call without rewiring.
- */
-interface SimilarSeed {
-  id: string;
-  code: string;
-  href: string;
-  title: string;
-  imageUrl: string;
-  area: string;
-  /** Indicative USD price; converted at render time to the selected currency. */
-  priceUsd: number;
-  ownership: string;
-  bedrooms: string;
-  buildingSqm: string | null;
-  landSqm: string | null;
-  leaseYears: string | null;
-  featured: boolean;
-  categoryLabel: string;
-  showGreatDeal: boolean;
-}
-
-/** Indicative similar-listings used for the preview route. */
-const SIMILAR_LISTINGS_DEFAULT: SimilarSeed[] = [
-  {
-    id: "sim-1",
-    code: "OPUM015",
-    href: "/properties/preview",
-    title: "6 Bedroom Villa in Umalas with Modern Luxury Tropical Design",
-    imageUrl: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&q=80",
-    area: "Umalas",
-    priceUsd: 2_450_000,
-    ownership: "Leasehold",
-    bedrooms: "6",
-    buildingSqm: "700",
-    landSqm: "450",
-    leaseYears: "30 Years",
-    featured: true,
-    categoryLabel: "Residential",
-    showGreatDeal: false,
-  },
-  {
-    id: "sim-2",
-    code: "OPUM037",
-    href: "/properties/preview",
-    title: "Ocean-View Estate in Uluwatu with Infinity Pool",
-    imageUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200&q=80",
-    area: "Uluwatu",
-    priceUsd: 3_200_000,
-    ownership: "Freehold",
-    bedrooms: "5",
-    buildingSqm: "850",
-    landSqm: "520",
-    leaseYears: null,
-    featured: true,
-    categoryLabel: "Investment",
-    showGreatDeal: false,
-  },
-  {
-    id: "sim-3",
-    code: "OPUM052",
-    href: "/properties/preview",
-    title: "Designer Villa Walking Distance to Pererenan Beach",
-    imageUrl: "https://images.unsplash.com/photo-1602088113235-229c19758e9f?w=1200&q=80",
-    area: "Pererenan",
-    priceUsd: 1_890_000,
-    ownership: "Leasehold",
-    bedrooms: "4",
-    buildingSqm: "550",
-    landSqm: "380",
-    leaseYears: "25 Years",
-    featured: false,
-    categoryLabel: "Residential",
-    showGreatDeal: true,
-  },
-];
-
-/** Project a SimilarSeed into the homepage card's model with a currency-aware price. */
-function similarToFeaturedModel(s: SimilarSeed, currency: SiteCurrency): FeaturedCardModel {
-  return {
-    id: s.id,
-    href: s.href,
-    code: s.code,
-    title: s.title,
-    imageUrl: s.imageUrl,
-    imageAlt: s.title,
-    area: s.area,
-    priceDisplay: formatCurrency(convertFromUsd(s.priceUsd, currency), currency),
-    ownership: s.ownership,
-    bedrooms: s.bedrooms,
-    buildingSqm: s.buildingSqm,
-    landSqm: s.landSqm,
-    leaseYears: s.leaseYears,
-    featured: s.featured,
-    categoryLabel: s.categoryLabel,
-    showGreatDeal: s.showGreatDeal,
-    externalListingUrl: null,
-  };
-}
 
 function NearbyCategoryIcon({ name }: { name: NearbyKey | "store" | "coffee" | "landmark" }) {
   const common = {

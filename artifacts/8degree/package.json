@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "generate:favicons": "node ./scripts/generate-favicons.mjs",
     "dev": "vite --config vite.config.ts",
     "check:no-raw-api-fetch": "node ./scripts/check-no-raw-api-fetch.mjs",
     "build": "pnpm run check:no-raw-api-fetch && vite build --config vite.config.ts",

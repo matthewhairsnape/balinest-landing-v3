@@ -4,6 +4,7 @@ import {
   listingPriceLine,
   listingShortBlurb,
 } from "@/lib/portfolio-listing";
+import { parseListingPriceUsd } from "@/lib/site-currency";
 import { truncateForMeta } from "@/lib/site-seo";
 
 type ListingOgFields = {
@@ -54,7 +55,11 @@ export function buildListingOgDescription(listing: ListingOgFields): string {
   if (ownership && ownership !== "Active" && ownership !== "—") parts.push(ownership);
   if (listing.landSizeSqm?.trim()) parts.push(`${listing.landSizeSqm.trim()} sqm land`);
   if (listing.buildingSizeSqm?.trim()) parts.push(`${listing.buildingSizeSqm.trim()} sqm building`);
-  const price = listing.estimatePriceUsd?.trim() || listingPriceLine(listing.description);
+  const priceUsd = parseListingPriceUsd(listing.estimatePriceUsd, listing.description);
+  const price =
+    priceUsd != null
+      ? `USD ${Math.round(priceUsd).toLocaleString("en-US")}`
+      : listingPriceLine(listing.description);
   if (price && !/^price on request$/i.test(price)) parts.push(price.replace(/^From\s+/i, ""));
 
   const joined = parts.filter(Boolean).join(" · ");
