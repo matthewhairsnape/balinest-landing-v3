@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { SITE_MEDIA } from "@/lib/site-assets";
+import { cn } from "@/lib/utils";
 
 const heroImgClass =
   "absolute inset-0 z-0 h-full w-full object-cover object-center";
@@ -14,6 +15,7 @@ function preferStaticHeroMedia(): boolean {
 
 export function HeroMedia() {
   const [videoFailed, setVideoFailed] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const [preferStatic, setPreferStatic] = useState(() =>
     typeof window !== "undefined" ? preferStaticHeroMedia() : false,
   );
@@ -50,17 +52,36 @@ export function HeroMedia() {
   }
 
   return (
-    <video
-      className={heroImgClass}
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="metadata"
-      poster={SITE_MEDIA.heroPoster}
-      onError={() => setVideoFailed(true)}
-    >
-      <source src={SITE_MEDIA.heroVideo} type="video/mp4" />
-    </video>
+    <>
+      <img
+        src={SITE_MEDIA.heroPoster}
+        alt=""
+        aria-hidden
+        className={cn(
+          heroImgClass,
+          "transition-opacity duration-700 ease-out",
+          videoReady ? "opacity-0" : "opacity-100",
+        )}
+        decoding="async"
+        fetchPriority="high"
+      />
+      <video
+        className={cn(
+          heroImgClass,
+          "transition-opacity duration-700 ease-out",
+          videoReady ? "opacity-100" : "opacity-0",
+        )}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster={SITE_MEDIA.heroPoster}
+        onCanPlay={() => setVideoReady(true)}
+        onError={() => setVideoFailed(true)}
+      >
+        <source src={SITE_MEDIA.heroVideo} type="video/mp4" />
+      </video>
+    </>
   );
 }

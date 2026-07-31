@@ -99,9 +99,9 @@ function wrapAdmin(Lazy: LazyExoticComponent<ComponentType<object>>) {
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[100dvh] min-h-screen flex-col font-sans">
+    <div className="flex min-h-[100dvh] min-h-screen w-full max-w-full min-w-0 flex-col overflow-x-clip font-sans">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main className="min-w-0 flex-1 overflow-x-clip">{children}</main>
       <Footer />
       <WhatsAppButton />
     </div>
@@ -142,7 +142,10 @@ function Router() {
       <Route path="/" component={wrapPublic(Home)} />
       <Route path="/projects" component={wrapPublic(Projects)} />
       <Route path="/projects/completed" component={wrapPublic(CompletedProjects)} />
+      <Route path="/property/:code" component={wrapPublic(ListingDetail)} />
       <Route path="/properties/:code" component={wrapPublic(ListingDetail)} />
+      <Route path="/long-term-rentals/:code" component={wrapPublic(ListingDetail)} />
+      <Route path="/unlisted/:code" component={wrapPublic(ListingDetail)} />
       <Route path="/projects/:slug" component={wrapPublic(ProjectDetail)} />
       <Route path="/blog" component={wrapPublic(Blog)} />
       <Route path="/blog/:slug" component={wrapPublic(BlogDetail)} />
@@ -171,6 +174,7 @@ function Router() {
       <Route path="/bali-location-guide" component={wrapPublic(LocationGuide)} />
       <Route path="/location-guide" component={wrapPublic(LocationGuide)} />
       <Route path="/long-term-rentals" component={wrapPublic(LongTermRentals)} />
+      <Route path="/long-term-rentals/" component={wrapPublic(LongTermRentals)} />
 
       <Route component={NotFound} />
     </Switch>

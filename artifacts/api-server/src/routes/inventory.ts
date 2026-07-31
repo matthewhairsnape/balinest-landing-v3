@@ -16,6 +16,16 @@ import {
 } from "../lib/property-inventory-sheet";
 import type { SheetListingRow } from "../lib/property-inventory-sheet";
 import { logger } from "../lib/logger";
+import {
+  absoluteSiteUrl,
+  buildListingOgDescription,
+  listingPublicPath,
+  rentalsPageOg,
+  resolveSiteOrigin,
+  RENTALS_PAGE_OG,
+  renderSocialPreviewHtml,
+  resolveListingOgImageUrl,
+} from "../lib/listing-og";
 
 const router = Router();
 
@@ -135,7 +145,7 @@ async function ensureInventoryListingMetaReady(): Promise<boolean> {
 }
 
 const listInventoryQuerySchema = z.object({
-  channel: z.enum(["silent", "website"]).optional(),
+  channel: z.enum(["silent", "website", "rentals"]).optional(),
   limit: z.coerce.number().int().min(1).max(2000).default(50),
   offset: z.coerce.number().int().min(0).default(0),
   refreshSheet: z.string().optional(),
@@ -148,7 +158,7 @@ function isSheetSectionDividerCode(code: string): boolean {
 
 function orderedExternalRows(
   rows: SheetListingRow[],
-  channel: "silent" | "website" | undefined,
+  channel: "silent" | "website" | "rentals" | undefined,
 ): SheetListingRow[] {
   let filtered = rows.filter((r) => !isSheetSectionDividerCode(r.code));
   if (channel) {
@@ -161,7 +171,7 @@ function orderedExternalRows(
 
 function jsonFromExternalRows(
   rows: SheetListingRow[],
-  channel: "silent" | "website" | undefined,
+  channel: "silent" | "website" | "rentals" | undefined,
   limit: number,
   offset: number,
 ): { listings: Array<ReturnType<typeof mapExternalRow>>; total: number } {
@@ -345,7 +355,7 @@ function listingJsonFromDbRow(r: {
     ba: r.ba,
     listingUrl: r.listingUrl,
     description: r.description,
-    channel: r.channel as "silent" | "website",
+    channel: r.channel as "silent" | "website" | "rentals",
     sortOrder: r.sortOrder,
     createdAt: r.createdAt?.toISOString() ?? "",
     updatedAt: r.updatedAt?.toISOString() ?? "",
@@ -363,7 +373,8 @@ async function findListingByCode(code: string): Promise<ListingRowJson | null> {
     rawSource === "database" || rawSource === "db" || rawSource === "postgres";
 
   const matchExternal = async (rows: SheetListingRow[]): Promise<ListingRowJson | null> => {
-    const hit = rows.find((r) => r.code.trim() === normalized);
+    const needle = normalized.toLowerCase();
+    const hit = rows.find((r) => r.code.trim().toLowerCase() === needle);
     if (!hit) return null;
     const merged = await mergeMetaIntoListings([mapExternalRow(hit)]);
     return merged[0] ?? null;
@@ -381,7 +392,7 @@ async function findListingByCode(code: string): Promise<ListingRowJson | null> {
     const [r] = await db
       .select(inventoryDbRowSelect)
       .from(propertyInventoryTable)
-      .where(eq(propertyInventoryTable.code, normalized))
+      .where(sql`lower(${propertyInventoryTable.code}) = ${normalized.toLowerCase()}`)
       .limit(1);
     if (!r) return null;
     const merged = await mergeMetaIntoListings([listingJsonFromDbRow(r)]);
@@ -695,7 +706,7 @@ const inventoryListingUpsertRowSchema = z.object({
       }
     }),
   description: z.string().max(100_000).default(""),
-  channel: z.enum(["silent", "website"]),
+  channel: z.enum(["silent", "website", "rentals"]),
   sortOrder: z.number().int().min(0).max(1_000_000).optional().default(0),
 });
 
@@ -832,6 +843,53 @@ router.post("/inventory/import", async (req, res): Promise<void> => {
   });
 
   res.status(201).json({ success: true, ...result });
+});
+
+/** HTML shell with per-page Open Graph tags for social crawlers (WhatsApp, Facebook, etc.). */
+router.get("/social-preview", async (req, res): Promise<void> => {
+  const rawCode = typeof req.query.code === "string" ? req.query.code.trim() : "";
+  const code = rawCode && /^[A-Za-z0-9_-]+$/.test(rawCode) ? rawCode : "";
+  const page = typeof req.query.page === "string" ? req.query.page.trim() : "";
+  const qHost = typeof req.query.host === "string" ? req.query.host.trim() : "";
+  const origin = resolveSiteOrigin(
+    qHost || req.get("x-forwarded-host") || req.get("host"),
+    req.get("x-forwarded-proto"),
+  );
+
+  try {
+    if (code) {
+      const listing = await findListingByCode(code);
+      if (listing) {
+        const canonicalPath = listingPublicPath(listing.code, listing.channel);
+        const title = `${(listing.title || listing.code).trim()} · 8 Degree`;
+        const description = buildListingOgDescription(listing);
+        const image = resolveListingOgImageUrl(listing, origin);
+        const html = renderSocialPreviewHtml({
+          title,
+          description,
+          image,
+          url: absoluteSiteUrl(canonicalPath, origin),
+        });
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+        res.status(200).send(html);
+        return;
+      }
+    }
+
+    if (page === "rentals") {
+      const html = renderSocialPreviewHtml(rentalsPageOg(origin));
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+      res.status(200).send(html);
+      return;
+    }
+
+    res.status(404).send("Not found");
+  } catch (error: unknown) {
+    logger.error({ err: error, code, page }, "social-preview failed");
+    res.status(500).send("Error");
+  }
 });
 
 export default router;

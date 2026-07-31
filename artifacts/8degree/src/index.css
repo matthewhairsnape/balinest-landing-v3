@@ -246,12 +246,21 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   body {
     @apply antialiased bg-background text-foreground;
     font-family: var(--app-font-family);
     font-weight: 300;
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  #root {
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   /* Display headings: Rework via --app-font-title; match Tailwind `font-serif` stack */

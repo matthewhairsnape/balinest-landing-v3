@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 import { useListInventoryListings, useListProjects } from "@workspace/api-client-react";
-import { inferBedroomsBucket, inferListingArea } from "@/lib/portfolio-listing";
+import { inferListingArea } from "@/lib/portfolio-listing";
+import {
+  DEFAULT_SEARCH_PRICE_MAX_USD,
+  defaultPropertySearchPayload,
+  listingMatchesSearchFilters,
+  matchesListingQuery,
+  parsePropertySearchQuery,
+  projectMatchesSearchFilters,
+  propertySearchFiltersToQuery,
+  type PropertySearchApplyPayload,
+} from "@/lib/property-search-filters";
 import { Seo } from "@/components/site/Seo";
 import { FeaturedInventoryStrip } from "@/components/site/FeaturedInventoryStrip";
-import { PropertySearchPanel, type PropertySearchApplyPayload } from "@/components/site/PropertySearchPanel";
+import { PropertySearchPanel } from "@/components/site/PropertySearchPanel";
 import { HOME_COPY } from "@/lib/i18n/home-copy";
 import { truncateForMeta } from "@/lib/site-seo";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
@@ -25,6 +36,7 @@ const LISTINGS_PAGE_SIZE = 9;
 
 export default function Projects() {
   const language = useSiteLanguage();
+  const [locationPath, setLocation] = useLocation();
   const t = useMemo(() => {
     const map: Record<SiteLanguage, Record<string, string>> = {
       en: {
@@ -84,11 +96,22 @@ export default function Projects() {
     };
     return map[language];
   }, [language]);
-  const [area, setArea] = useState<string>("all");
-  const [propertyType, setPropertyType] = useState<string>("all");
-  const [bedrooms, setBedrooms] = useState<string>("all");
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<PropertySearchApplyPayload>(() =>
+    typeof window !== "undefined"
+      ? parsePropertySearchQuery(window.location.search, DEFAULT_SEARCH_PRICE_MAX_USD)
+      : defaultPropertySearchPayload(),
+  );
   const [listingsPage, setListingsPage] = useState(0);
+
+  const area = filters.area;
+  const propertyType = filters.propertyType;
+  const bedrooms = filters.bedrooms;
+  const search = filters.listingQuery;
+
+  useEffect(() => {
+    if (!locationPath.startsWith("/projects")) return;
+    setFilters(parsePropertySearchQuery(window.location.search, DEFAULT_SEARCH_PRICE_MAX_USD));
+  }, [locationPath]);
 
   const {
     data: projectData,
@@ -138,28 +161,13 @@ export default function Projects() {
       return true;
     });
 
-    const listingsFiltered = listingsPublic.filter((row) => {
-      if (area !== "all" && inferListingArea(row.title, row.description) !== area) return false;
-      if (bedrooms !== "all") {
-        const n = inferBedroomsBucket(row.title, row.description);
-        if (n !== null) {
-          if (bedrooms === "4") {
-            if (n < 4) return false;
-          } else if (bedrooms === "6+") {
-            if (n < 6) return false;
-          } else if (Number(bedrooms) !== n) {
-            return false;
-          }
-        }
-      }
-      if (propertyType !== "all") {
-        const blob = `${row.title} ${row.description}`.toLowerCase();
-        if (propertyType === "Villa" && !/\bvilla\b|\bvillas\b/i.test(blob)) return false;
-        if (propertyType === "Apartment" && !/\b(apartment|apt|penthouse|condo)\b/i.test(blob)) return false;
-        if (propertyType === "Land" && !/\b(land|plot|tanah)\b/i.test(blob)) return false;
-      }
-      return true;
-    });
+    const listingsFiltered = listingsPublic.filter((row) =>
+      listingMatchesSearchFilters(row, filters, DEFAULT_SEARCH_PRICE_MAX_USD),
+    );
+
+    const projectsFiltered = projects.filter((p) =>
+      projectMatchesSearchFilters(p, filters, DEFAULT_SEARCH_PRICE_MAX_USD),
+    );
 
     const listingsForCards = [...listingsFiltered].sort(
       (a, b) => Number(!!b.featured) - Number(!!a.featured),
@@ -170,20 +178,19 @@ export default function Projects() {
       | { kind: "listing"; row: (typeof listingsForCards)[number] };
 
     let mergedItems: MergedItem[] = [
-      ...projects.map((p) => ({ kind: "project" as const, p })),
+      ...projectsFiltered.map((p) => ({ kind: "project" as const, p })),
       ...listingsForCards.map((row) => ({ kind: "listing" as const, row })),
     ];
 
     if (search.trim()) {
-      const q = search.toLowerCase();
       mergedItems = mergedItems.filter((item) => {
         if (item.kind === "project") {
           const c = item.p;
-          return `${c.title} ${c.area} ${c.shortDescription}`.toLowerCase().includes(q);
+          return matchesListingQuery([c.title, c.area, c.shortDescription], search);
         }
         const row = item.row;
         const ar = inferListingArea(row.title, row.description);
-        return `${row.code} ${row.title} ${ar}`.toLowerCase().includes(q);
+        return matchesListingQuery([row.code, row.title, ar], search);
       });
     }
 
@@ -208,7 +215,7 @@ export default function Projects() {
           )
         : inventoryRowToFeaturedModel(item.row, idx),
     );
-  }, [projects, listingsRaw, area, bedrooms, propertyType, search]);
+  }, [projects, listingsRaw, filters, search]);
 
   const listingsTotalPages = Math.max(1, Math.ceil(portfolioFeaturedModels.length / LISTINGS_PAGE_SIZE));
   const listingsPageSafe = Math.min(listingsPage, listingsTotalPages - 1);
@@ -219,7 +226,7 @@ export default function Projects() {
 
   useEffect(() => {
     setListingsPage(0);
-  }, [area, propertyType, bedrooms, search]);
+  }, [filters]);
 
   useEffect(() => {
     setListingsPage((p) => Math.min(p, listingsTotalPages - 1));
@@ -239,10 +246,9 @@ export default function Projects() {
   };
 
   function handleSearchApply(payload: PropertySearchApplyPayload) {
-    setArea(payload.area);
-    setPropertyType(payload.propertyType);
-    setBedrooms(payload.bedrooms);
-    setSearch(payload.listingQuery);
+    setFilters(payload);
+    const qs = propertySearchFiltersToQuery(payload);
+    setLocation(qs ? `/projects?${qs}` : "/projects");
     requestAnimationFrame(() =>
       document.getElementById("portfolio-results")?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
@@ -295,6 +301,7 @@ export default function Projects() {
           <PropertySearchPanel
             layout="embeddedInHero"
             labels={searchLabels}
+            initialValues={filters}
             onApply={handleSearchApply}
           />
         </div>

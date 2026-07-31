@@ -3,12 +3,17 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useListInventoryListings } from "@workspace/api-client-react";
 import type { PropertyInventoryListing } from "@workspace/api-client-react";
-import { inferBedroomsBucket, inferListingArea } from "@/lib/portfolio-listing";
+import { inferListingArea } from "@/lib/portfolio-listing";
+import {
+  defaultPropertySearchPayload,
+  listingMatchesSearchFilters,
+  matchesListingQuery,
+  type PropertySearchApplyPayload,
+} from "@/lib/property-search-filters";
 import { Seo } from "@/components/site/Seo";
 import { FeaturedInventoryStrip } from "@/components/site/FeaturedInventoryStrip";
 import {
   PropertySearchPanel,
-  type PropertySearchApplyPayload,
   type PropertySearchLabels,
 } from "@/components/site/PropertySearchPanel";
 import { HOME_COPY } from "@/lib/i18n/home-copy";
@@ -46,17 +51,6 @@ const RENTAL_SEARCH_PRICE_MAX_USD = 150_000;
 
 const EMPTY_LIST: [] = [];
 const LISTINGS_PAGE_SIZE = 9;
-
-/** Heuristic: sheet row reads as a rental / lease (not sale-only). */
-function listingLooksLikeRental(row: PropertyInventoryListing): boolean {
-  const blob = `${row.title} ${row.description}`.toLowerCase();
-  if (/\b(for sale|dijual|sale only|freehold sale)\b/i.test(blob) && !/\b(rent|rental|lease|sewa)\b/i.test(blob)) {
-    return false;
-  }
-  return /\b(rent|rental|lease|letting|\/mo|per month|monthly|annual rent|yearly|long\s*-?\s*term|lt\s*r|sewa|disewakan|kontrak|kost|villa\s+rent)\b/i.test(
-    blob,
-  );
-}
 
 export default function LongTermRentalsPage() {
   const language = useSiteLanguage();
@@ -136,11 +130,12 @@ export default function LongTermRentalsPage() {
     return map[language];
   }, [language]);
 
-  const [area, setArea] = useState<string>("all");
-  const [propertyType, setPropertyType] = useState<string>("all");
-  const [bedrooms, setBedrooms] = useState<string>("all");
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<PropertySearchApplyPayload>(() =>
+    defaultPropertySearchPayload(RENTAL_SEARCH_PRICE_MAX_USD),
+  );
   const [listingsPage, setListingsPage] = useState(0);
+
+  const search = filters.listingQuery;
 
   const {
     data: inventoryData,
@@ -148,7 +143,7 @@ export default function LongTermRentalsPage() {
     isError: inventoryError,
     error: inventoryErr,
   } = useListInventoryListings({
-    channel: "website",
+    channel: "rentals",
     limit: 500,
     offset: 0,
   });
@@ -157,7 +152,7 @@ export default function LongTermRentalsPage() {
   const loadErrorMessage =
     inventoryErr instanceof Error ? inventoryErr.message : "Could not load rental listings";
 
-  const { portfolioFeaturedModels, showingRentalFallback } = useMemo(() => {
+  const { portfolioFeaturedModels } = useMemo(() => {
     const listingsPublic = listingsRaw.filter((row) => {
       const vis = row.visibility ?? "active";
       const sale = row.saleStatus ?? "available";
@@ -167,47 +162,23 @@ export default function LongTermRentalsPage() {
       return true;
     });
 
-    const listingsBaseFiltered = listingsPublic.filter((row) => {
-      if (area !== "all" && inferListingArea(row.title, row.description) !== area) return false;
-      if (bedrooms !== "all") {
-        const n = inferBedroomsBucket(row.title, row.description);
-        if (n !== null) {
-          if (bedrooms === "4") {
-            if (n < 4) return false;
-          } else if (bedrooms === "6+") {
-            if (n < 6) return false;
-          } else if (Number(bedrooms) !== n) {
-            return false;
-          }
-        }
-      }
-      if (propertyType !== "all") {
-        const blob = `${row.title} ${row.description}`.toLowerCase();
-        if (propertyType === "Villa" && !/\bvilla\b|\bvillas\b/i.test(blob)) return false;
-        if (propertyType === "Apartment" && !/\b(apartment|apt|penthouse|condo)\b/i.test(blob)) return false;
-        if (propertyType === "Land" && !/\b(land|plot|tanah)\b/i.test(blob)) return false;
-      }
-      return true;
-    });
+    const listingsBaseFiltered = listingsPublic.filter((row) =>
+      listingMatchesSearchFilters(row, filters, RENTAL_SEARCH_PRICE_MAX_USD),
+    );
 
-    const rentalPreferred = listingsBaseFiltered.filter(listingLooksLikeRental);
-    const useFallback = rentalPreferred.length === 0 && listingsBaseFiltered.length > 0;
-    const pool = useFallback ? listingsBaseFiltered : rentalPreferred;
-
-    const sorted = [...pool].sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
+    const sorted = [...listingsBaseFiltered].sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
 
     let rows = sorted;
     if (search.trim()) {
-      const q = search.toLowerCase();
       rows = sorted.filter((row) => {
         const ar = inferListingArea(row.title, row.description);
-        return `${row.code} ${row.title} ${ar}`.toLowerCase().includes(q);
+        return matchesListingQuery([row.code, row.title, ar], search);
       });
     }
 
     const models = rows.map((row, idx) => inventoryRowToFeaturedModel(row, idx));
-    return { portfolioFeaturedModels: models, showingRentalFallback: useFallback && rows.length > 0 };
-  }, [listingsRaw, area, bedrooms, propertyType, search]);
+    return { portfolioFeaturedModels: models };
+  }, [listingsRaw, filters, search]);
 
   const listingsTotalPages = Math.max(1, Math.ceil(portfolioFeaturedModels.length / LISTINGS_PAGE_SIZE));
   const listingsPageSafe = Math.min(listingsPage, listingsTotalPages - 1);
@@ -218,7 +189,7 @@ export default function LongTermRentalsPage() {
 
   useEffect(() => {
     setListingsPage(0);
-  }, [area, propertyType, bedrooms, search]);
+  }, [filters]);
 
   useEffect(() => {
     setListingsPage((p) => Math.min(p, listingsTotalPages - 1));
@@ -241,10 +212,10 @@ export default function LongTermRentalsPage() {
   }, [language]);
 
   function handleSearchApply(payload: PropertySearchApplyPayload) {
-    setArea(payload.area);
-    setPropertyType(payload.propertyType);
-    setBedrooms(payload.bedrooms);
-    setSearch(payload.listingQuery);
+    setFilters({
+      ...payload,
+      maxPrice: Math.min(payload.maxPrice, RENTAL_SEARCH_PRICE_MAX_USD),
+    });
     requestAnimationFrame(() =>
       document.getElementById("rental-results")?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
@@ -256,6 +227,7 @@ export default function LongTermRentalsPage() {
         title={`${t.title} · 8 Degree`}
         description={truncateForMeta(seoDescription)}
         path={PATH}
+        image="/site-media/long-term-rentals-hero.png"
       />
       <section className="relative w-full">
         <div className="pointer-events-none absolute inset-0 overflow-hidden min-h-[min(100dvh,960px)]">
@@ -297,6 +269,7 @@ export default function LongTermRentalsPage() {
             fieldSet="rentalsMinimal"
             priceRangeMax={RENTAL_SEARCH_PRICE_MAX_USD}
             labels={searchLabels}
+            initialValues={filters}
             onApply={handleSearchApply}
           />
         </div>
@@ -310,6 +283,7 @@ export default function LongTermRentalsPage() {
         sectionVariant="standalone"
         hideHeading
         maxCards={9}
+        channel="rentals"
         sectionBackgroundColor={BALI_PROPERTIES_PAGE_SURFACE}
       />
 
@@ -326,15 +300,6 @@ export default function LongTermRentalsPage() {
         ) : (
           <section className="pb-16 pt-4 md:pb-20 md:pt-6" style={{ backgroundColor: BALI_PROPERTIES_PAGE_SURFACE }}>
             <div className="mx-auto max-w-[1400px] px-4 sm:px-6 md:px-10">
-              {showingRentalFallback ? (
-                <div
-                  className="mb-8 rounded-lg border border-amber-600/35 bg-amber-500/[0.08] px-4 py-3 text-sm text-foreground"
-                  role="status"
-                >
-                  {t.rentalFallbackBanner}
-                </div>
-              ) : null}
-
               <div className="mb-10 mx-auto max-w-2xl text-center md:mb-12">
                 <h2 className="font-serif text-3xl font-bold uppercase tracking-[0.06em] text-primary md:text-4xl lg:text-[2.35rem]">
                   {t.portfolioBrowseTitle}
@@ -360,9 +325,13 @@ export default function LongTermRentalsPage() {
               ) : portfolioFeaturedModels.length === 0 ? (
                 <RentalsEmptyState
                   hasFilters={
-                    area !== "all" || propertyType !== "all" || bedrooms !== "all" || Boolean(search.trim())
+                    filters.area !== "all" ||
+                    filters.bedrooms !== "all" ||
+                    Boolean(filters.listingQuery.trim()) ||
+                    filters.minPrice > 0 ||
+                    filters.maxPrice < RENTAL_SEARCH_PRICE_MAX_USD
                   }
-                  websiteInventoryCount={inventoryError ? 0 : (inventoryData?.listings?.length ?? 0)}
+                  rentalInventoryCount={inventoryError ? 0 : (inventoryData?.listings?.length ?? 0)}
                   inventoryUnavailable={inventoryError}
                 />
               ) : (
@@ -410,11 +379,11 @@ export default function LongTermRentalsPage() {
 
 function RentalsEmptyState({
   hasFilters,
-  websiteInventoryCount,
+  rentalInventoryCount,
   inventoryUnavailable,
 }: {
   hasFilters: boolean;
-  websiteInventoryCount: number;
+  rentalInventoryCount: number;
   inventoryUnavailable: boolean;
 }) {
   const language = useSiteLanguage();
@@ -441,12 +410,17 @@ function RentalsEmptyState({
       <p className="text-sm">
         {inventoryUnavailable
           ? "Inventory could not be loaded."
-          : `Website channel rows in the sheet: ${websiteInventoryCount}.`}
+          : `Rentals channel rows in the sheet: ${rentalInventoryCount}.`}
       </p>
       <p className="text-sm font-light leading-relaxed">
-        Add listings with <code className="text-[11px] bg-muted px-1 py-0.5 text-foreground">website</code> channel and
-        include rental wording (e.g. &quot;rent&quot;, &quot;monthly&quot;, &quot;lease&quot;) in titles or descriptions
-        so they appear here first.
+        Tag rows in Google Sheets with channel{" "}
+        <code className="text-[11px] bg-muted px-1 py-0.5 text-foreground">rentals</code> (or{" "}
+        <code className="text-[11px] bg-muted px-1 py-0.5 text-foreground">rental list</code>) so they appear here.
+        Use <code className="text-[11px] bg-muted px-1 py-0.5 text-foreground">website</code> for for-sale listings on{" "}
+        <Link href="/projects" className="underline hover:text-primary">
+          Bali properties
+        </Link>
+        .
       </p>
       <p className="text-xs text-muted-foreground">
         <Link href="/contact" className="text-primary underline-offset-4 hover:underline">

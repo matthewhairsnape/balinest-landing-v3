@@ -12,4 +12,5 @@ export type PropertyInventoryListingChannel =
 export const PropertyInventoryListingChannel = {
   silent: "silent",
   website: "website",
+  rentals: "rentals",
 } as const;

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { ChevronDown, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { HeroMedia } from "@/components/site/HeroMedia";
 import { PortfolioShowcase } from "@/components/site/PortfolioShowcase";
 import { FeaturedInventoryStrip } from "@/components/site/FeaturedInventoryStrip";
 import { PropertySearchPanel } from "@/components/site/PropertySearchPanel";
+import { propertySearchFiltersToQuery, type PropertySearchApplyPayload } from "@/lib/property-search-filters";
 import { TopAreaImage } from "@/components/site/TopAreaImage";
 import { useGetFeaturedProjects, useListBlogPosts } from "@workspace/api-client-react";
 import {
@@ -266,6 +267,7 @@ const FAQ_ITEMS: Record<SiteLanguage, FaqItem[]> = {
 
 export default function Home() {
   const language = useSiteLanguage();
+  const [, setLocation] = useLocation();
   const t = HOME_COPY[language];
   const { data: featuredProjectsData } = useGetFeaturedProjects();
   const { data: latestJournalData, isLoading: latestJournalLoading } = useListBlogPosts({ limit: 3 });
@@ -290,8 +292,13 @@ export default function Home() {
     search: t.search,
   };
 
+  function handleHomeSearchApply(payload: PropertySearchApplyPayload) {
+    const qs = propertySearchFiltersToQuery(payload);
+    setLocation(qs ? `/projects?${qs}` : "/projects");
+  }
+
   return (
-    <div className="w-full">
+    <div className="w-full max-w-full min-w-0 overflow-x-clip">
       <Seo
         title="Luxury Bali real estate & strategic developments"
         description={truncateForMeta(DEFAULT_DESCRIPTION)}
@@ -341,7 +348,7 @@ export default function Home() {
         </div>
       </section>
 
-      <PropertySearchPanel labels={searchLabels} />
+      <PropertySearchPanel labels={searchLabels} onApply={handleHomeSearchApply} />
 
       {featuredProjectsData?.projects && featuredProjectsData.projects.length > 0 ? (
         <PortfolioShowcase projects={featuredProjectsData.projects} />
@@ -350,13 +357,13 @@ export default function Home() {
       <FeaturedInventoryStrip title={t.highlighted} subtitle={t.highlightedSub} viewAllLabel={t.viewAll} />
 
       {/* Why Invest - Site Overview — text from left, image from right (same timing) */}
-      <section className="py-24 text-foreground" style={{ backgroundColor: HOME_ADVANTAGE_BAND }}>
-        <div className="container px-6 mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <section className="overflow-x-clip py-24 text-foreground" style={{ backgroundColor: HOME_ADVANTAGE_BAND }}>
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2">
             <motion.div
-              className="text-justify"
-              initial={{ opacity: 0, x: -80 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              className="min-w-0 text-justify"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 1.1, delay: 0, ease: [0.22, 1, 0.36, 1] }}
             >
@@ -386,11 +393,11 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, x: 80 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 1.1, delay: 0, ease: [0.22, 1, 0.36, 1] }}
-              className="relative aspect-square overflow-hidden"
+              className="relative aspect-square min-w-0 max-w-full overflow-hidden"
             >
               <TopAreaImage alt="8 Degree · Bali property advisory" />
             </motion.div>
@@ -460,8 +467,8 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24" style={{ backgroundColor: HOME_TESTIMONIALS_BAND }}>
-        <div className="container px-6 mx-auto">
+      <section className="overflow-x-clip py-24" style={{ backgroundColor: HOME_TESTIMONIALS_BAND }}>
+        <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="mb-4 font-serif text-3xl font-bold uppercase tracking-[0.08em] text-primary md:text-5xl">{t.clientVoices}</h2>
             <p className="text-muted-foreground">{t.clientVoicesSub}</p>
@@ -473,7 +480,7 @@ export default function Home() {
                 className="static h-10 w-10 shrink-0 translate-x-0 translate-y-0 border-primary/40 bg-background text-primary shadow-sm hover:bg-primary/10 disabled:opacity-40"
                 aria-label="Previous testimonial"
               />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-x-clip">
                 <CarouselContent className="-ml-0">
                   {TESTIMONIAL_TEMPLATES.map((row) => (
                     <CarouselItem key={row.id} className="basis-full pl-0">

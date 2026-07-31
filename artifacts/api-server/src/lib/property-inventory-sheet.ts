@@ -33,7 +33,7 @@ export type SheetListingRow = {
   livingRoom: string | null;
   listingUrl: string | null;
   description: string;
-  channel: "silent" | "website";
+  channel: "silent" | "website" | "rentals";
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -168,9 +168,10 @@ function driveFolderIdFromUrl(url: string | null): string | null {
   return m?.[1] ?? null;
 }
 
-function rowChannel(row: Record<string, string>): "silent" | "website" {
+function rowChannel(row: Record<string, string>): "silent" | "website" | "rentals" {
   const ch = (row["Channel"] ?? row["channel"] ?? "").trim().toLowerCase();
   if (ch === "silent") return "silent";
+  if (ch === "rentals" || ch === "rental" || ch === "rental list") return "rentals";
   return "website";
 }
 

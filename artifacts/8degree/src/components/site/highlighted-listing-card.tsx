@@ -17,6 +17,7 @@ import {
   inferListingStatus,
   listingPriceLine,
 } from "@/lib/portfolio-listing";
+import { listingPublicPath } from "@/lib/listing-public-url";
 import { COMMON_COPY } from "@/lib/i18n/common";
 import { useSiteCopy } from "@/lib/site-language";
 
@@ -95,7 +96,7 @@ export function inventoryRowToFeaturedModel(row: PropertyInventoryListing, idx: 
   const showGreatDeal = Boolean(row.featured) || idx >= 2;
   return {
     id: row.id,
-    href: `/properties/${encodeURIComponent(row.code)}`,
+    href: listingPublicPath(row.code, row.channel),
     code: row.code,
     title: row.title || row.code,
     imageUrl: img,

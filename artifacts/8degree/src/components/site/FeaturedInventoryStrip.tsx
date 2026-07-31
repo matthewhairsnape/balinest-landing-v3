@@ -32,6 +32,8 @@ export type FeaturedInventoryStripProps = {
   maxCards?: number;
   /** Section background (homepage default: listings band). */
   sectionBackgroundColor?: string;
+  /** Inventory channel filter (defaults to website / for-sale listings). */
+  channel?: "website" | "rentals" | "silent";
 };
 
 const viewAllCtaClassName =
@@ -81,11 +83,12 @@ export function FeaturedInventoryStrip({
   hideHeading = false,
   maxCards = DEFAULT_GRID_SLOTS,
   sectionBackgroundColor = HOME_LISTINGS_BAND,
+  channel = "website",
 }: FeaturedInventoryStripProps) {
   const slots = Math.max(1, Math.min(maxCards, 24));
 
   const { data, isError, isLoading, isFetching } = useListInventoryListings({
-    channel: "website",
+    channel,
     limit: 200,
     offset: 0,
   });

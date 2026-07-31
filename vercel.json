@@ -30,6 +30,11 @@
       "source": "/8-degree-real-estate-x-balinest-villa/:path*",
       "destination": "/balinest/",
       "permanent": true
+    },
+    {
+      "source": "/properties/:code",
+      "destination": "/property/:code",
+      "permanent": true
     }
   ],
   "rewrites": [

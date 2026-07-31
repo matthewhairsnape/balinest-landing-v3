@@ -154,7 +154,9 @@ export function Navbar() {
   const isPropertySectionActive =
     location === "/projects" ||
     location.startsWith("/projects/") ||
+    location.startsWith("/property/") ||
     location.startsWith("/properties/") ||
+    location.startsWith("/long-term-rentals/") ||
     location === "/long-term-rentals";
   const navLinks = [
     { href: "/invest", label: copy.invest },
@@ -165,7 +167,7 @@ export function Navbar() {
   return (
     <nav
       className={cn(
-        "fixed left-0 right-0 top-0 z-50 pt-[env(safe-area-inset-top,0px)] transition-all duration-300",
+        "fixed inset-x-0 top-0 z-50 w-full max-w-full pt-[env(safe-area-inset-top,0px)] transition-all duration-300",
         isScrolled
           ? "border-b border-white/20 bg-[#01514E]/70 py-3 backdrop-blur-md md:py-4"
           : "border-b border-white/15 bg-[#01514E]/40 py-4 backdrop-blur-sm md:py-5"

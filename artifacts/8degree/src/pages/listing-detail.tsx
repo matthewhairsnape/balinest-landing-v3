@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import {
   ApiError,
   getInventoryListingQueryKey,
@@ -42,6 +42,16 @@ import {
   FeaturedListingCard,
   type FeaturedCardModel,
 } from "@/components/site/highlighted-listing-card";
+import {
+  buildListingOgDescription,
+  listingOgImageSrc,
+  listingOgTitle,
+} from "@/lib/listing-og-meta";
+import {
+  listingAllowedOnRoute,
+  listingPublicPath,
+  listingRouteKindFromPath,
+} from "@/lib/listing-public-url";
 
 /**
  * Brand palette — matches buyer/seller/projects pages.
@@ -538,8 +548,21 @@ export default function ListingDetail() {
     },
   }[language];
 
-  const [, params] = useRoute("/properties/:code");
-  const code = (params?.code ?? "").trim();
+  const [, setLocation] = useLocation();
+  const [, matchProperty] = useRoute("/property/:code");
+  const [, matchProperties] = useRoute("/properties/:code");
+  const [, matchRental] = useRoute("/long-term-rentals/:code");
+  const [, matchUnlisted] = useRoute("/unlisted/:code");
+  const code = (
+    matchProperty?.code ??
+    matchProperties?.code ??
+    matchRental?.code ??
+    matchUnlisted?.code ??
+    ""
+  ).trim();
+  const routeKind = listingRouteKindFromPath(
+    typeof window !== "undefined" ? window.location.pathname : "/property",
+  );
   const isPreview = code.toLowerCase() === "preview";
 
   const { data, isLoading: apiLoading, isError, error } = useGetInventoryListing(code, {
@@ -559,23 +582,31 @@ export default function ListingDetail() {
     const images = galleryUrls(listing)
       .map((u) => toAbsoluteImageUrl(u))
       .filter((u): u is string => Boolean(u));
+    const listingPath = listingPublicPath(listing.code, listing.channel);
     return jsonLdGraph([
       organizationJsonLdNode(),
       {
         "@type": "Residence",
         name: listing.title || listing.code,
         description: truncateForMeta(listingShortBlurb(listing.description) || listing.title),
-        url: canonicalUrl(`/properties/${encodeURIComponent(listing.code)}`),
+        url: canonicalUrl(listingPath),
         ...(images.length ? { image: images } : {}),
       },
     ]);
   }, [listing]);
 
+  useEffect(() => {
+    if (!listing || isPreview) return;
+    const expected = listingPublicPath(listing.code, listing.channel);
+    const current = window.location.pathname.split("?")[0];
+    if (current !== expected) setLocation(expected);
+  }, [listing, isPreview, setLocation]);
+
   const isUnavailable = Boolean(
     listing &&
       (listing.visibility === "draft" ||
         listing.saleStatus === "sold" ||
-        listing.channel !== "website"),
+        !listingAllowedOnRoute(listing.channel, routeKind)),
   );
 
   const form = useForm({
@@ -671,7 +702,7 @@ export default function ListingDetail() {
   if (isLoading) {
     return (
       <Fragment>
-        <Seo title={t.listing} description={t.loading} path={`/properties/${encodeURIComponent(code)}`} />
+        <Seo title={t.listing} description={t.loading} path={`/property/${encodeURIComponent(code)}`} />
         <div className="min-h-screen pt-32" style={{ backgroundColor: PALETTE.paper }}>
           <div className="mx-auto max-w-6xl px-6">
             <div className="mb-8 h-12 w-48 animate-pulse rounded bg-black/5" />
@@ -694,7 +725,7 @@ export default function ListingDetail() {
         <Seo
           title={listing.title || listing.code}
           description={t.notAvailable}
-          path={`/properties/${encodeURIComponent(code)}`}
+          path={listingPublicPath(listing.code, listing.channel)}
           noindex
         />
         <ErrorState
@@ -717,7 +748,7 @@ export default function ListingDetail() {
         <Seo
           title={t.notFound}
           description="We could not find this listing."
-          path={`/properties/${encodeURIComponent(code)}`}
+          path={code ? `/property/${encodeURIComponent(code)}` : "/projects"}
           noindex
         />
         <ErrorState
@@ -896,11 +927,12 @@ export default function ListingDetail() {
       }}
     >
       <Seo
-        title={listing.title || listing.code}
-        description={truncateForMeta(listingShortBlurb(listing.description) || `${area}. ${priceLine}`)}
-        path={`/properties/${encodeURIComponent(listing.code)}`}
-        image={primaryImage}
+        title={listingOgTitle(listing)}
+        description={buildListingOgDescription(listing)}
+        path={listingPublicPath(listing.code, listing.channel)}
+        image={listingOgImageSrc(listing)}
         jsonLd={listingJsonLd}
+        noindex={routeKind === "unlisted"}
       />
 
       {/* Film grain overlay */}

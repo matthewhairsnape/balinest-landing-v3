@@ -110,6 +110,8 @@ export function Seo({
     upsertMeta("property", "og:url", url);
     upsertMeta("property", "og:type", type);
     upsertMeta("property", "og:image", ogImage);
+    upsertMeta("property", "og:image:width", "1200");
+    upsertMeta("property", "og:image:height", "630");
     upsertMeta("property", "og:site_name", SITE_NAME);
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", pageTitle);

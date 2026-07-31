@@ -4,8 +4,8 @@
  *
  * Hero assets
  *   hero-cinematic.mp4  ← Drive ID 10sSFDovjSw_krEVU918oNqNQPrWVFX9z
- *   hero-still.jpg      ← Drive ID 1qaXnGteqT0MRHOCrCILtQmEh3wRI42_x
- *   hero-poster.jpg     ← Drive ID 1ub5eDDyyhD6lKjTNd5IfHXgd8G-0jqi-
+ *   hero-poster.jpg     ← Jahten House exterior (loading frame before hero video)
+ *   hero-still.jpg      ← same still; fallback when video unavailable
  *
  * Team photos     ← Drive folder 1y_5qRH398Jexl7ccmWx_63lQ7jSXxePb
  * Area images     ← Drive folder 1_XsNdvz-ip0KqnLnecHdyxNDQFlE84Dp

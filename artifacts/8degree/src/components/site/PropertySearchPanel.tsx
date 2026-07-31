@@ -13,6 +13,9 @@ import {
   baliHighlightRectPath,
 } from "@/lib/bali-area-map";
 import { HOME_LISTINGS_BAND } from "@/lib/home-section-surfaces";
+import { type PropertySearchApplyPayload } from "@/lib/property-search-filters";
+
+export type { PropertySearchApplyPayload } from "@/lib/property-search-filters";
 
 const MIN_PRICE_BOUND = 0;
 const MAX_PRICE_BOUND = 3000000;
@@ -70,13 +73,6 @@ export type PropertySearchLabels = {
   search: string;
 };
 
-export type PropertySearchApplyPayload = {
-  area: string;
-  propertyType: string;
-  bedrooms: string;
-  listingQuery: string;
-};
-
 function mapPropertyTypeChoice(raw: string | undefined): string {
   if (!raw) return "all";
   return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
@@ -92,9 +88,21 @@ function mapAreaChoice(selectedArea: string): string {
   return selectedArea;
 }
 
+function reversePropertyTypeChoice(mapped: string): string | undefined {
+  if (mapped === "all") return undefined;
+  return mapped.toLowerCase();
+}
+
+function reverseAreaChoice(mapped: string): string {
+  if (mapped === "all") return "Area";
+  return mapped;
+}
+
 type PropertySearchPanelProps = {
   labels: PropertySearchLabels;
   onApply?: (payload: PropertySearchApplyPayload) => void;
+  /** Hydrate controls from URL or parent filter state (e.g. on /projects). */
+  initialValues?: PropertySearchApplyPayload;
   /** Homepage: band below hero with upward overlap. Listings hero: card sits inside hero under copy. */
   layout?: "overlapBelowHero" | "embeddedInHero";
   /** Long-term rentals: area, bedrooms, price/year, and search only (custom headline via labels). */
@@ -106,6 +114,7 @@ type PropertySearchPanelProps = {
 export function PropertySearchPanel({
   labels: t,
   onApply,
+  initialValues,
   layout = "overlapBelowHero",
   fieldSet = "full",
   priceRangeMax,
@@ -150,6 +159,27 @@ export function PropertySearchPanel({
   }, [isAreaMenuOpen]);
 
   useEffect(() => {
+    if (!initialValues) return;
+    setSelectedArea(reverseAreaChoice(initialValues.area));
+    setPropertyTypeChoice(reversePropertyTypeChoice(initialValues.propertyType));
+    setBedroomsChoice(initialValues.bedrooms === "all" ? undefined : initialValues.bedrooms);
+    setOwnershipChoice(initialValues.ownership === "all" ? undefined : initialValues.ownership);
+    setDevStatusChoice(initialValues.devStatus === "all" ? undefined : initialValues.devStatus);
+    setPropertyCode(initialValues.listingQuery);
+    const min = clamp(initialValues.minPrice, MIN_PRICE_BOUND, effectivePriceMax);
+    const max = clamp(initialValues.maxPrice, MIN_PRICE_BOUND, effectivePriceMax);
+    setMinPrice(formatPriceInput(min, effectivePriceMax));
+    setMaxPrice(formatPriceInput(max, effectivePriceMax));
+    setMinSlider(priceToSlider(min, effectivePriceMax));
+    setMaxSlider(priceToSlider(max, effectivePriceMax));
+    if (min > MIN_PRICE_BOUND || max < effectivePriceMax) {
+      setSelectedPriceLabel(`$${formatPriceInput(min, effectivePriceMax)} – $${formatPriceInput(max, effectivePriceMax)}`);
+    } else {
+      setSelectedPriceLabel("");
+    }
+  }, [initialValues, effectivePriceMax]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (areaMenuRef.current && !areaMenuRef.current.contains(event.target as Node)) {
         setIsAreaMenuOpen(false);
@@ -166,11 +196,17 @@ export function PropertySearchPanel({
   const mapActive = activeBaliMapRegions(selectedArea);
 
   function emitApply() {
+    const min = parseNumericInput(minPrice) ?? MIN_PRICE_BOUND;
+    const max = parseNumericInput(maxPrice) ?? effectivePriceMax;
     onApply?.({
       area: mapAreaChoice(selectedArea),
       propertyType: mapPropertyTypeChoice(propertyTypeChoice),
       bedrooms: mapBedroomsChoice(bedroomsChoice),
       listingQuery: propertyCode.trim(),
+      ownership: ownershipChoice ?? "all",
+      minPrice: clamp(min, MIN_PRICE_BOUND, effectivePriceMax),
+      maxPrice: clamp(max, MIN_PRICE_BOUND, effectivePriceMax),
+      devStatus: devStatusChoice ?? "all",
     });
   }
 
@@ -194,7 +230,7 @@ export function PropertySearchPanel({
           </button>
 
           {isAreaMenuOpen ? (
-            <div className="absolute left-0 top-12 z-50 grid w-[min(92vw,780px)] grid-cols-1 gap-2 rounded border border-[#01514E]/25 bg-[#f7f5f1] p-2.5 shadow-xl md:grid-cols-[1fr_1fr_1.45fr]">
+            <div className="absolute left-0 top-12 z-50 grid w-full max-w-[min(calc(100vw-2rem),780px)] grid-cols-1 gap-2 rounded border border-[#01514E]/25 bg-[#f7f5f1] p-2.5 shadow-xl md:grid-cols-[1fr_1fr_1.45fr]">
               <div>
                 <p className="text-xs font-semibold text-[#01514E]">Search Locations</p>
                 <div className="relative mt-2">
@@ -473,8 +509,8 @@ export function PropertySearchPanel({
     <section
       className={
         embedded
-          ? "relative z-20 mt-6 w-full translate-y-2 md:mt-8 md:translate-y-3"
-          : "-mt-12 relative z-30 pb-2 md:pb-3"
+          ? "relative z-20 mt-6 w-full max-w-full min-w-0 translate-y-2 overflow-x-clip md:mt-8 md:translate-y-3"
+          : "relative z-30 -mt-12 overflow-x-clip pb-2 md:pb-3"
       }
       style={embedded ? undefined : { backgroundColor: HOME_LISTINGS_BAND }}
     >
@@ -530,7 +566,7 @@ export function PropertySearchPanel({
                   </button>
 
                   {isAreaMenuOpen ? (
-                    <div className="absolute left-0 top-12 z-50 grid w-[min(92vw,780px)] grid-cols-1 gap-2 rounded border border-[#01514E]/25 bg-[#f7f5f1] p-2.5 shadow-xl md:grid-cols-[1fr_1fr_1.45fr]">
+                    <div className="absolute left-0 top-12 z-50 grid w-full max-w-[min(calc(100vw-2rem),780px)] grid-cols-1 gap-2 rounded border border-[#01514E]/25 bg-[#f7f5f1] p-2.5 shadow-xl md:grid-cols-[1fr_1fr_1.45fr]">
                       <div>
                         <p className="text-xs font-semibold text-[#01514E]">Search Locations</p>
                         <div className="relative mt-2">

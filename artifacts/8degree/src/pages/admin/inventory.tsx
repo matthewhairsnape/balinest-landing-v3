@@ -99,7 +99,7 @@ export default function AdminInventory() {
   }, [location]);
 
   const params = {
-    channel: channel !== "all" ? (channel as "silent" | "website") : undefined,
+    channel: channel !== "all" ? (channel as "silent" | "website" | "rentals") : undefined,
     limit: PAGE_SIZE,
     offset,
   };
@@ -206,6 +206,7 @@ export default function AdminInventory() {
 
   const channelBadge = (ch: string) => {
     if (ch === "silent") return "bg-purple-100 text-purple-800";
+    if (ch === "rentals") return "bg-sky-100 text-sky-800";
     if (ch === "website") return "bg-blue-100 text-blue-800";
     return "";
   };
@@ -312,8 +313,9 @@ export default function AdminInventory() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Channels</SelectItem>
-            <SelectItem value="silent">Silent</SelectItem>
             <SelectItem value="website">Website</SelectItem>
+            <SelectItem value="rentals">Rentals</SelectItem>
+            <SelectItem value="silent">Silent</SelectItem>
           </SelectContent>
         </Select>
       </div>
