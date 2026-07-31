@@ -41,6 +41,15 @@ if (cats.status !== 200) {
   errors.push(`/api/blog/categories returned no categories`);
 }
 
+if (blog.status === 200 && blog.body?.posts?.[0]) {
+  const img = blog.body.posts[0].featuredImageUrl ?? "";
+  if (img.includes("/api/inventory/thumb/") || img.startsWith("/journal-media/")) {
+    errors.push(
+      `featuredImageUrl still broken (${img.slice(0, 80)}…) — deploy latest Matt branch`,
+    );
+  }
+}
+
 if (errors.length) {
   console.error(`FAIL: journal down or empty on ${base}`);
   for (const e of errors) console.error(`  - ${e}`);

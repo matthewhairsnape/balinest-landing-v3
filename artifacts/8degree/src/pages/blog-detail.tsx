@@ -44,7 +44,9 @@ export default function BlogDetail() {
         url: canonicalUrl(`/blog/${encodeURIComponent(post.slug)}`),
         datePublished: post.publishedAt ?? undefined,
         author: { "@type": "Person", name: post.author },
-        ...(post.featuredImageUrl ? { image: [post.featuredImageUrl] } : {}),
+        ...(post.featuredImageUrl
+          ? { image: [journalFeaturedImageSrc(post.featuredImageUrl)] }
+          : {}),
       },
     ]);
   }, [post]);

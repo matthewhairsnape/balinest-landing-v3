@@ -137,13 +137,22 @@ function googleDocIdFromUrl(url: string): string | null {
 function slugFromArticleUrl(url: string): string | null {
   try {
     const pathname = new URL(url.trim()).pathname.replace(/^\/+|\/+$/g, "");
-    if (!pathname || pathname === "journal") return null;
+    if (!pathname || pathname === "journal" || pathname === "blog") return null;
     const parts = pathname.split("/").filter(Boolean);
     const last = parts[parts.length - 1];
     return last?.trim() || null;
   } catch {
     return null;
   }
+}
+
+/** Match sheet/import slugs regardless of trailing slashes or `/blog/` prefix. */
+export function normalizeJournalSlug(slug: string): string {
+  return slug
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .replace(/^blog\//i, "")
+    .toLowerCase();
 }
 
 function slugifyTitle(title: string): string {
@@ -223,7 +232,7 @@ export function parseJournalArticlesSheetCsv(csv: string): SheetArticleRow[] {
 function importBySlugMap(): Map<string, JournalImportRow> {
   const map = new Map<string, JournalImportRow>();
   for (const row of loadJournalImportRows()) {
-    map.set(row.slug, row);
+    map.set(normalizeJournalSlug(row.slug), row);
   }
   return map;
 }
@@ -413,7 +422,7 @@ export async function listJournalFromSheet(options: {
 
   const posts = filtered
     .map((row) => {
-      const importRow = imports.get(row.slug);
+      const importRow = imports.get(normalizeJournalSlug(row.slug));
       const content = importRow?.content ?? "";
       return mergeRowWithImport(row, importRow, content);
     })
@@ -432,10 +441,10 @@ export async function getJournalFromSheetBySlug(
   const rows = await loadArticlesFromGoogleSheet({ forceRefresh: options?.forceRefresh });
   if (!rows?.length) return null;
 
-  const row = rows.find((r) => r.slug === slug);
+  const row = rows.find((r) => normalizeJournalSlug(r.slug) === normalizeJournalSlug(slug));
   if (!row || !row.published) return null;
 
-  const importRow = importBySlugMap().get(slug);
+  const importRow = importBySlugMap().get(normalizeJournalSlug(slug));
   let content = importRow?.content ?? "";
 
   if (row.contentDocUrl) {
