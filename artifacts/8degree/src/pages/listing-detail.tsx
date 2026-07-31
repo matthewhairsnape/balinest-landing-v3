@@ -792,10 +792,9 @@ export default function ListingDetail() {
     "aspect-[16/9]",
   ] as const;
 
-  // `level`, `zoning`, and `livingRoom` aren't typed on the API listing — read via a narrow cast.
-  const levelVal = (listing as { level?: string }).level?.trim() || "—";
-  const zoningVal = (listing as { zoning?: string }).zoning?.trim() || "—";
-  const livingRoomVal = (listing as { livingRoom?: string }).livingRoom?.trim() || "—";
+  const levelVal = listing.level?.trim() || "—";
+  const zoningVal = listing.zoning?.trim() || "—";
+  const livingRoomVal = listing.livingRoom?.trim() || "—";
 
   // Price card mirrors the navbar currency selector. We assume `priceLine`
   // is the canonical USD figure (per `listing.estimatePriceUsd`) and convert

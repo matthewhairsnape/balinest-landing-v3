@@ -28,6 +28,9 @@ export type SheetListingRow = {
   buildingSizeSqm: string | null;
   br: string | null;
   ba: string | null;
+  level: string | null;
+  zoning: string | null;
+  livingRoom: string | null;
   listingUrl: string | null;
   description: string;
   channel: "silent" | "website";
@@ -211,11 +214,20 @@ export function parsePropertyInventorySheetCsv(csvText: string): SheetListingRow
     const ownership = normalizedNullableCell(row, "OWNERSHIP", "ownership");
     const location = normalizedNullableCell(row, "LOCATION", "location");
     const estimatePriceUsd = normalizedNullableCell(row, "ESTIMATE PRICE IN USD", "Estimate Price In USD");
-    const deliveryEstimate = normalizedNullableCell(row, "DELIVERY ESTIMATE", "Delivery Estimate");
+    const deliveryEstimate = normalizedNullableCell(
+      row,
+      "Development Status",
+      "DEVELOPMENT STATUS",
+      "DELIVERY ESTIMATE",
+      "Delivery Estimate",
+    );
     const landSizeSqm = normalizedNullableCell(row, "LAND SIZE(Sqm)", "LAND SIZE (Sqm)", "Land Size (Sqm)");
     const buildingSizeSqm = normalizedNullableCell(row, "BUILDING SIZE(Sqm)", "BUILDING SIZE (Sqm)", "Building Size (Sqm)");
-    const br = normalizedNullableCell(row, "BR", "br");
-    const ba = normalizedNullableCell(row, "BA", "ba");
+    const br = normalizedNullableCell(row, "Bedrooms", "BEDROOMS", "BR", "br");
+    const ba = normalizedNullableCell(row, "Bathrooms", "BATHROOMS", "BA", "ba");
+    const level = normalizedNullableCell(row, "Level", "LEVEL", "Level ");
+    const zoning = normalizedNullableCell(row, "Zoning", "ZONING");
+    const livingRoom = normalizedNullableCell(row, "Living Room", "LIVING ROOM", "Living room");
 
     // Sheet uses section divider rows like "Website Listing" / "Silent Listing"
     // with no property fields — never treat those as inventory cards.
@@ -267,6 +279,9 @@ export function parsePropertyInventorySheetCsv(csvText: string): SheetListingRow
       buildingSizeSqm,
       br,
       ba,
+      level,
+      zoning,
+      livingRoom,
       listingUrl,
       description: String(desc).slice(0, 100_000),
       channel,
