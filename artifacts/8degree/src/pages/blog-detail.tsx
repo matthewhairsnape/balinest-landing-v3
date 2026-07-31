@@ -8,6 +8,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Seo } from "@/components/site/Seo";
 import { canonicalUrl, jsonLdGraph, organizationJsonLdNode, truncateForMeta } from "@/lib/site-seo";
+import { journalFeaturedImageSrc } from "@/lib/journal-featured-image";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function BlogDetail() {
@@ -96,29 +97,31 @@ export default function BlogDetail() {
     );
   }
 
+  const heroImage = journalFeaturedImageSrc(post?.featuredImageUrl);
+
   return (
     <div className="min-h-screen bg-background">
       <Seo
         title={post.title}
         description={truncateForMeta(post.excerpt)}
         path={`/blog/${encodeURIComponent(post.slug)}`}
-        image={post.featuredImageUrl}
+        image={heroImage ?? undefined}
         type="article"
         jsonLd={postJsonLd}
       />
       {/* Hero */}
-      {post.featuredImageUrl && (
+      {heroImage && (
         <div className="relative h-[50vh] min-h-[400px] overflow-hidden">
-          <img src={post.featuredImageUrl} alt={post.title} className="w-full h-full object-cover" />
+          <img src={heroImage} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60" />
         </div>
       )}
 
-      <div className={`container mx-auto max-w-3xl px-6 ${post.featuredImageUrl ? '-mt-24 relative z-10' : 'pt-32'}`}>
+      <div className={`container mx-auto max-w-3xl px-6 ${heroImage ? '-mt-24 relative z-10' : 'pt-32'}`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`${post.featuredImageUrl ? 'bg-background p-8 md:p-12 mb-8 border-b border-border' : 'py-12 mb-8 border-b border-border'}`}
+          className={`${heroImage ? 'bg-background p-8 md:p-12 mb-8 border-b border-border' : 'py-12 mb-8 border-b border-border'}`}
         >
           <Link href="/blog">
             <button className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm tracking-wide mb-6">
@@ -185,18 +188,21 @@ export default function BlogDetail() {
           <div className="border-t border-border pt-12 pb-16">
             <h2 className="font-serif text-2xl mb-8 text-primary">{t.related}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {related.map(p => (
+              {related.map(p => {
+                const relatedImage = journalFeaturedImageSrc(p.featuredImageUrl);
+                return (
                 <Link key={p.id} href={`/blog/${p.slug}`}>
                   <div className="group cursor-pointer">
-                    {p.featuredImageUrl && (
+                    {relatedImage && (
                       <div className="aspect-video overflow-hidden bg-muted mb-3">
-                        <img src={p.featuredImageUrl} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={relatedImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                       </div>
                     )}
                     <h3 className="font-serif text-sm leading-snug group-hover:text-primary transition-colors">{p.title}</h3>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

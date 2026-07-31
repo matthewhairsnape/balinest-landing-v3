@@ -27,6 +27,7 @@ import {
   listJournalSheetCategories,
   loadArticlesFromGoogleSheet,
   useSheetAsJournalSource,
+  clearJournalArticlesSheetCache,
 } from "../lib/journal-articles-sheet";
 import { resolveJournalFeaturedImageUrl, rewriteJournalContentHtml } from "../lib/journal-image-url";
 
@@ -66,6 +67,11 @@ router.get("/journal/media/*splat", (req, res): void => {
   }
   res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
   createReadStream(filePath).pipe(res);
+});
+
+router.post("/blog/revalidate-sheet", (_req, res): void => {
+  clearJournalArticlesSheetCache();
+  res.json({ ok: true });
 });
 
 const BlogRefreshQuery = z.object({

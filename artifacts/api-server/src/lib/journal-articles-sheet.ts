@@ -164,10 +164,6 @@ function categorySlugFromName(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function resolveDriveFeaturedImage(url: string | null | undefined): string | null {
-  return resolveJournalFeaturedImageUrl(url);
-}
-
 function cell(row: Record<string, string>, ...keys: string[]): string {
   for (const key of keys) {
     const v = row[key]?.trim();
@@ -212,7 +208,7 @@ export function parseJournalArticlesSheetCsv(csv: string): SheetArticleRow[] {
       title: title.trim(),
       slug,
       sourceUrl,
-      featuredImageUrl: resolveDriveFeaturedImage(featuredRaw),
+      featuredImageUrl: featuredRaw?.trim() || null,
       contentDocUrl: contentDocUrl || null,
       categoryName,
       categorySlug: categoryName ? categorySlugFromName(categoryName) : null,

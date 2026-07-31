@@ -6,6 +6,7 @@ import { useListBlogPosts, useListBlogCategories } from "@workspace/api-client-r
 import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
+import { journalFeaturedImageSrc } from "@/lib/journal-featured-image";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function Blog() {
@@ -154,7 +155,9 @@ export default function Blog() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post, i) => (
+            {posts.map((post, i) => {
+              const imageSrc = journalFeaturedImageSrc(post.featuredImageUrl);
+              return (
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -165,13 +168,14 @@ export default function Blog() {
                 <Link href={`/blog/${post.slug}`}>
                   <div className="group cursor-pointer">
                     <div className="relative aspect-video overflow-hidden bg-muted mb-4">
-                      {post.featuredImageUrl && !brokenImages.has(post.id) ? (
+                      {imageSrc && !brokenImages.has(post.id) ? (
                         <img
-                          src={post.featuredImageUrl}
+                          src={imageSrc}
                           alt=""
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           loading="lazy"
                           decoding="async"
+                          referrerPolicy="no-referrer"
                           onError={() => {
                             setBrokenImages((prev) => {
                               if (prev.has(post.id)) return prev;
@@ -201,7 +205,8 @@ export default function Blog() {
                   </div>
                 </Link>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
