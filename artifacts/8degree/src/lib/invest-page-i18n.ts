@@ -58,7 +58,7 @@ export const INVEST_PAGE_COPY: Record<SiteLanguage, InvestPageCopy> = {
   en: {
     seoTitle: "Invest in Bali",
     seoDescription:
-      "Bali property investment and venture opportunities with 8 Degree Real Estate — boutique advisory for international investors.",
+      "Invest in Bali with 8 Degree: curated villas, developments, and clear advisory for overseas buyers and investors.",
     heroAria: "Invest in Bali",
     byInvitation: "By invitation",
     heroKicker: "An 8 Degree Real Estate opportunity",
