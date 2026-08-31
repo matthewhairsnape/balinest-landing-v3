@@ -12,6 +12,7 @@ import {
   parsePropertySearchQuery,
   projectMatchesArea,
   projectMatchesSearchFilters,
+  propertySearchFiltersActive,
   propertySearchFiltersToQuery,
   resolveAreaName,
   type PropertySearchApplyPayload,
@@ -245,6 +246,8 @@ export default function Projects() {
     setListingsPage((p) => Math.min(p, listingsTotalPages - 1));
   }, [listingsTotalPages]);
 
+  const filtersActive = propertySearchFiltersActive(filters, DEFAULT_SEARCH_PRICE_MAX_USD);
+
   const homeCopy = HOME_COPY[language];
   const searchLabels = {
     searchHeadline: homeCopy.searchHeadline,
@@ -320,16 +323,18 @@ export default function Projects() {
         </div>
       </section>
 
-      <FeaturedInventoryStrip
-        title={homeCopy.highlighted}
-        subtitle={homeCopy.highlightedSub}
-        viewAllLabel={homeCopy.viewAll}
-        viewAllHref="#portfolio-results"
-        sectionVariant="standalone"
-        hideHeading
-        maxCards={9}
-        sectionBackgroundColor={BALI_PROPERTIES_PAGE_SURFACE}
-      />
+      {!filtersActive ? (
+        <FeaturedInventoryStrip
+          title={homeCopy.highlighted}
+          subtitle={homeCopy.highlightedSub}
+          viewAllLabel={homeCopy.viewAll}
+          viewAllHref="#portfolio-results"
+          sectionVariant="standalone"
+          hideHeading
+          maxCards={9}
+          sectionBackgroundColor={BALI_PROPERTIES_PAGE_SURFACE}
+        />
+      ) : null}
 
       <div id="portfolio-results" className="container mx-auto max-w-6xl px-6 py-16">
         {projectsFetchFailed ? (

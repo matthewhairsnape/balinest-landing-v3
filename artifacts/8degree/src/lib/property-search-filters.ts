@@ -118,6 +118,24 @@ export function defaultPropertySearchPayload(
   };
 }
 
+/** True when the user has changed any filter from the default browse state. */
+export function propertySearchFiltersActive(
+  payload: PropertySearchApplyPayload,
+  priceMax: number = DEFAULT_SEARCH_PRICE_MAX_USD,
+): boolean {
+  const defaults = defaultPropertySearchPayload(priceMax);
+  return (
+    payload.area !== defaults.area ||
+    payload.propertyType !== defaults.propertyType ||
+    payload.bedrooms !== defaults.bedrooms ||
+    payload.ownership !== defaults.ownership ||
+    payload.devStatus !== defaults.devStatus ||
+    payload.listingQuery.trim() !== "" ||
+    payload.minPrice !== defaults.minPrice ||
+    payload.maxPrice !== defaults.maxPrice
+  );
+}
+
 export function propertySearchFiltersToQuery(
   payload: PropertySearchApplyPayload,
   priceMax: number = DEFAULT_SEARCH_PRICE_MAX_USD,
