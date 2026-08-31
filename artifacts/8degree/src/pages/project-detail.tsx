@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { SITE_WHATSAPP_URL } from "@/lib/site-links";
+import { Seo } from "@/components/site/Seo";
 import {
   canonicalUrl,
   jsonLdGraph,

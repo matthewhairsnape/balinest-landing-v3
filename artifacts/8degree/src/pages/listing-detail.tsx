@@ -22,6 +22,7 @@ import {
   listingShortBlurb,
 } from "@/lib/portfolio-listing";
 import { SITE_WHATSAPP_URL } from "@/lib/site-links";
+import { Seo } from "@/components/site/Seo";
 import {
   canonicalUrl,
   jsonLdGraph,
