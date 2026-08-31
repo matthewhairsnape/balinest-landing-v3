@@ -12,21 +12,6 @@
   },
   "redirects": [
     {
-      "source": "/8-degree-real-estate-x-balinest-villa",
-      "destination": "/balinest/",
-      "permanent": true
-    },
-    {
-      "source": "/8-degree-real-estate-x-balinest-villa/",
-      "destination": "/balinest/",
-      "permanent": true
-    },
-    {
-      "source": "/8-degree-real-estate-x-balinest-villa/:path*",
-      "destination": "/balinest/",
-      "permanent": true
-    },
-    {
       "source": "/properties/:code",
       "destination": "/property/:code",
       "permanent": true
@@ -36,6 +21,14 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
+    },
+    {
+      "source": "/8-degree-real-estate-x-balinest-villa",
+      "destination": "/balinest/index.html"
+    },
+    {
+      "source": "/8-degree-real-estate-x-balinest-villa/",
+      "destination": "/balinest/index.html"
     },
     {
       "source": "/((?!api/|site-media/|assets/|fonts/|favicon|.*\\..*).*)",

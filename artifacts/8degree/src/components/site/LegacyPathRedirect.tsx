@@ -3,11 +3,9 @@ import { useLocation } from "wouter";
 
 /**
  * Legacy WordPress / marketing URLs → current static or SPA destinations.
- * Uses a hard navigation for static HTML targets (e.g. /balinest/).
+ * Balinest LP is served at /8-degree-real-estate-x-balinest-villa/ via vercel.json rewrite (slug preserved).
  */
 const LEGACY_REDIRECTS: Record<string, string> = {
-  "/8-degree-real-estate-x-balinest-villa": "/balinest/",
-  "/8-degree-real-estate-x-balinest-villa/": "/balinest/",
 };
 
 function normalizePath(path: string): string {
