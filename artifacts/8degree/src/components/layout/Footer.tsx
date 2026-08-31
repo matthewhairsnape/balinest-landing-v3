@@ -1,6 +1,8 @@
 import { Link } from "wouter";
 import { Facebook, Instagram, Linkedin, MapPin, Youtube } from "lucide-react";
-import { SITE_CONTACT, SITE_REDDNOTE_URL, SITE_WHATSAPP_URL } from "@/lib/site-links";
+import type { SVGProps } from "react";
+import { SITE_REDDNOTE_URL, SITE_WHATSAPP_URL } from "@/lib/site-links";
+import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
   return (
