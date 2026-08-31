@@ -7,15 +7,10 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
-      "includeFiles": "{artifacts/api-server/dist/**,artifacts/api-server/data/**,scripts/data/journal-import.json}"
+      "includeFiles": "{artifacts/api-server/dist/**,artifacts/api-server/data/**,scripts/data/journal-import.json,artifacts/8degree/dist/public/index.html}"
     }
   },
   "redirects": [
-    {
-      "source": "/api/inventory/thumb/:fileId",
-      "destination": "https://drive.google.com/thumbnail?id=:fileId&sz=w1200",
-      "permanent": false
-    },
     {
       "source": "/8-degree-real-estate-x-balinest-villa",
       "destination": "/balinest/",
@@ -43,7 +38,7 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/|site-media/|assets/|fonts/|favicon|.*\\..*).*)",
       "destination": "/index.html"
     }
   ],
@@ -51,6 +46,10 @@
     {
       "source": "/assets/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/site-media/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     }
   ]
 }

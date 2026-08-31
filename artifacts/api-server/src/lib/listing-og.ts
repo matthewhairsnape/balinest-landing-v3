@@ -131,7 +131,9 @@ export function resolveListingOgImageUrl(
   }
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     const id = driveFileIdFromUrl(trimmed);
-    if (id) return absoluteSiteUrl(`/api/inventory/thumb/${id}?sz=w1200`, origin);
+    if (id) {
+      return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200`;
+    }
     return trimmed;
   }
   return absoluteSiteUrl(trimmed.startsWith("/") ? trimmed : `/${trimmed}`, origin);
@@ -155,8 +157,9 @@ let cachedIndexHtml: string | null = null;
 function loadIndexHtmlTemplate(): string {
   if (cachedIndexHtml) return cachedIndexHtml;
   const candidates = [
-    path.join(process.cwd(), "index.html"),
     path.join(process.cwd(), "artifacts/8degree/dist/public/index.html"),
+    path.join(process.cwd(), "index.html"),
+    path.join(process.cwd(), "dist/public/index.html"),
   ];
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) {
@@ -182,6 +185,7 @@ export function renderSocialPreviewHtml(meta: {
   html = replaceOrInsertMeta(html, "property", "og:url", meta.url);
   html = replaceOrInsertMeta(html, "property", "og:type", "website");
   html = replaceOrInsertMeta(html, "property", "og:image", meta.image);
+  html = replaceOrInsertMeta(html, "property", "og:image:secure_url", meta.image);
   html = replaceOrInsertMeta(html, "property", "og:image:width", "1200");
   html = replaceOrInsertMeta(html, "property", "og:image:height", "630");
   html = replaceOrInsertMeta(html, "property", "og:site_name", "8 Degree");

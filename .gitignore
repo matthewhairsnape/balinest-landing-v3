@@ -59,3 +59,7 @@ Thumbs.db
 *.tar.gz
 /myprojectzip
 .vercel
+
+# Accidental CLI artifact dumps (must not be committed)
+home-B4L4z4o1.js/
+artifacts/8degree/home-B4L4z4o1.js/

@@ -41,7 +41,7 @@ export function listingOgImageSrc(listing: {
   if (!raw?.trim()) return undefined;
   if (/drive\.google\.com\/drive\/folders\//i.test(raw)) return undefined;
   const id = driveFileIdFromUrl(raw);
-  if (id) return `/api/inventory/thumb/${id}?sz=w1200`;
+  if (id) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200`;
   return raw.trim();
 }
 

@@ -10,6 +10,7 @@ import {
   isInventoryCardEligible,
   type FeaturedCardModel,
 } from "@/components/site/highlighted-listing-card";
+import { useSiteCurrency, type SiteCurrency } from "@/lib/site-currency";
 
 const DEFAULT_GRID_SLOTS = 6;
 
@@ -56,13 +57,14 @@ function ListingCardSkeleton() {
 function inventoryToFeaturedCards(
   listings: PropertyInventoryListing[],
   slots: number,
+  currency: SiteCurrency,
 ): FeaturedCardModel[] {
   const eligible = listings.filter(isInventoryCardEligible);
 
   return [...eligible]
     .sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
     .slice(0, slots)
-    .map((row, idx) => inventoryRowToFeaturedModel(row, idx));
+    .map((row, idx) => inventoryRowToFeaturedModel(row, idx, currency));
 }
 
 export function FeaturedInventoryStrip({
@@ -77,6 +79,7 @@ export function FeaturedInventoryStrip({
   channel = "website",
 }: FeaturedInventoryStripProps) {
   const slots = Math.max(1, Math.min(maxCards, 24));
+  const currency = useSiteCurrency();
 
   const { data, isError, isLoading, isFetching } = useListInventoryListings({
     channel,
@@ -90,8 +93,8 @@ export function FeaturedInventoryStrip({
     if (waitingForListings || isError || !data?.listings?.length) {
       return [];
     }
-    return inventoryToFeaturedCards(data.listings, slots);
-  }, [waitingForListings, isError, data, slots]);
+    return inventoryToFeaturedCards(data.listings, slots, currency);
+  }, [waitingForListings, isError, data, slots, currency]);
 
   if (!waitingForListings && cards.length === 0) {
     return null;

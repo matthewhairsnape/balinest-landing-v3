@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SITE_MEDIA } from "@/lib/site-assets";
 import { cn } from "@/lib/utils";
 
@@ -14,11 +14,30 @@ function preferStaticHeroMedia(): boolean {
 }
 
 export function HeroMedia() {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [videoFailed, setVideoFailed] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [preferStatic, setPreferStatic] = useState(() =>
     typeof window !== "undefined" ? preferStaticHeroMedia() : false,
   );
+
+  const markVideoReady = useCallback(() => {
+    setVideoReady(true);
+  }, []);
+
+  const tryPlay = useCallback(() => {
+    const el = videoRef.current;
+    if (!el || preferStatic || videoFailed) return;
+
+    if (el.readyState >= 2) markVideoReady();
+
+    void el.play()
+      .then(() => markVideoReady())
+      .catch(() => {
+        // Autoplay blocked — still reveal the loaded frame if data is available.
+        if (el.readyState >= 2) markVideoReady();
+      });
+  }, [preferStatic, videoFailed, markVideoReady]);
 
   useLayoutEffect(() => {
     setPreferStatic(preferStaticHeroMedia());
@@ -35,6 +54,11 @@ export function HeroMedia() {
       conn?.removeEventListener?.("change", onChange as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    if (preferStatic || videoFailed) return;
+    tryPlay();
+  }, [preferStatic, videoFailed, tryPlay]);
 
   if (preferStatic || videoFailed) {
     return (
@@ -66,22 +90,24 @@ export function HeroMedia() {
         fetchPriority="high"
       />
       <video
+        ref={videoRef}
         className={cn(
           heroImgClass,
           "transition-opacity duration-700 ease-out",
           videoReady ? "opacity-100" : "opacity-0",
         )}
+        src={SITE_MEDIA.heroVideo}
         autoPlay
         muted
         loop
         playsInline
         preload="auto"
         poster={SITE_MEDIA.heroPoster}
-        onCanPlay={() => setVideoReady(true)}
+        onLoadedData={tryPlay}
+        onCanPlay={tryPlay}
+        onPlaying={markVideoReady}
         onError={() => setVideoFailed(true)}
-      >
-        <source src={SITE_MEDIA.heroVideo} type="video/mp4" />
-      </video>
+      />
     </>
   );
 }

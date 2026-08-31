@@ -32,12 +32,39 @@ const SEO_SITEMAP_PATHS = [
   "/blog",
 ];
 
+function injectGa4IntoBalinestLp(outDir: string) {
+  const gaId = (process.env.VITE_GA4_MEASUREMENT_ID || "G-YVHE230FXC").trim();
+  if (!gaId) return;
+
+  const balinestHtml = path.join(outDir, "balinest", "index.html");
+  if (!fs.existsSync(balinestHtml)) return;
+
+  let html = fs.readFileSync(balinestHtml, "utf8");
+  if (html.includes("googletagmanager.com/gtag/js")) return;
+
+  const snippet = [
+    "<!-- Google tag (gtag.js) -->",
+    `<script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>`,
+    "<script>",
+    "  window.dataLayer = window.dataLayer || [];",
+    "  function gtag(){dataLayer.push(arguments);}",
+    '  gtag("js", new Date());',
+    `  gtag("config", "${gaId}");`,
+    "</script>",
+    "",
+  ].join("\n");
+
+  html = html.replace("<head>", `<head>\n${snippet}`);
+  fs.writeFileSync(balinestHtml, html);
+}
+
 function seoStaticPlugin(base: string): Plugin {
   return {
     name: "8degree-seo-static",
     closeBundle() {
       const outDir = path.resolve(import.meta.dirname, "dist/public");
       if (!fs.existsSync(outDir)) return;
+      injectGa4IntoBalinestLp(outDir);
       const site = (process.env.VITE_PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
       const baseNorm = base === "/" ? "" : base.replace(/\/$/, "");
       const absolute = (pathname: string) => {

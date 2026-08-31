@@ -531,7 +531,7 @@ export function PropertySearchPanel({
       className={
         embedded
           ? "relative z-20 mt-6 w-full max-w-full min-w-0 translate-y-2 overflow-x-clip md:mt-8 md:translate-y-3"
-          : "relative z-30 -mt-12 overflow-x-clip pb-2 md:pb-3"
+          : "relative z-20 -mt-4 overflow-x-clip pb-2 md:z-30 md:-mt-12 md:pb-3"
       }
       style={embedded ? undefined : { backgroundColor: HOME_LISTINGS_BAND }}
     >
@@ -540,7 +540,7 @@ export function PropertySearchPanel({
           className={
             embedded
               ? "rounded-[18px] bg-[#f7f5f1] px-5 py-6 shadow-[0_14px_40px_rgba(0,0,0,0.22)] md:px-10 md:py-7"
-              : "-translate-y-[25%] rounded-[18px] bg-[#f7f5f1] px-6 py-6 shadow-[0_14px_40px_rgba(0,0,0,0.16)] md:px-10 md:py-7"
+              : "-translate-y-[8%] rounded-[18px] bg-[#f7f5f1] px-6 py-6 shadow-[0_14px_40px_rgba(0,0,0,0.16)] sm:-translate-y-[15%] md:-translate-y-[25%] md:px-10 md:py-7"
           }
         >
           <div className="mb-6 flex w-full justify-center px-2 sm:px-4">

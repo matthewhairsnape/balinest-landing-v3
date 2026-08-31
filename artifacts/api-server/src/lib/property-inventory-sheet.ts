@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { parse } from "csv-parse/sync";
+import { parseUsdFromFreeText } from "../../../shared/listing-price.js";
 import { logger } from "./logger";
 
 /** Default workbook + tab (gid) for 8D property list. */
@@ -136,10 +137,9 @@ function nullableCell(row: Record<string, string>, ...keys: string[]): string | 
 /** Normalize sheet "Price" / "ESTIMATE PRICE IN USD" cells to a plain USD integer string. */
 function normalizeSheetPriceUsd(raw: string | null): string | null {
   if (!raw?.trim()) return null;
-  const cleaned = raw.replace(/,/g, "").replace(/\s/g, "").trim();
-  const n = Number(cleaned);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return String(Math.round(n));
+  const parsed = parseUsdFromFreeText(raw);
+  if (parsed != null && parsed > 0) return String(Math.round(parsed));
+  return null;
 }
 
 function normalizeHeaderKey(key: string): string {

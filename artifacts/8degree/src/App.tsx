@@ -15,6 +15,7 @@ import { getApiBaseUrl } from "@/lib/api-base";
 import { Seo } from "@/components/site/Seo";
 import { SITE_NAME } from "@/lib/site-seo";
 import { LegacyPathRedirect } from "@/components/site/LegacyPathRedirect";
+import { Ga4PageViewTracker } from "@/components/site/Ga4PageViewTracker";
 
 const Home = lazy(() => import("@/pages/home"));
 const Projects = lazy(() => import("@/pages/projects"));
@@ -186,6 +187,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}>
+          <Ga4PageViewTracker />
           <LegacyPathRedirect />
           <Router />
         </WouterRouter>

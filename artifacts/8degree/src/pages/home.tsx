@@ -300,7 +300,7 @@ export default function Home() {
   return (
     <div className="w-full max-w-full min-w-0 overflow-x-clip">
       <Seo
-        title="Luxury Bali real estate & strategic developments"
+        title="Bali real estate & strategic developments"
         description={truncateForMeta(DEFAULT_DESCRIPTION)}
         path="/"
         jsonLd={jsonLdGraph([
@@ -315,7 +315,7 @@ export default function Home() {
           <HeroMedia />
         </div>
         
-        <div className="container relative z-20 px-6 mx-auto text-center text-white">
+        <div className="container relative z-20 mx-auto px-6 pb-28 text-center text-white sm:pb-32 md:pb-16">
           <motion.h1 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -337,13 +337,16 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.6 }}
-            className="flex items-center justify-center"
+            className="relative z-40 flex items-center justify-center"
           >
-            <Link href="/invest">
-              <Button size="lg" variant="outline" className="rounded-none tracking-widest uppercase w-full sm:w-auto h-14 px-8 border-white text-white hover:bg-white hover:text-black">
-                {t.investGuide}
-              </Button>
-            </Link>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="h-14 w-full rounded-none border-white px-8 tracking-widest uppercase text-white hover:bg-white hover:text-black sm:w-auto"
+            >
+              <Link href="/invest">{t.investGuide}</Link>
+            </Button>
           </motion.div>
         </div>
       </section>

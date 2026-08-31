@@ -22,6 +22,7 @@ import { PropertySearchPanel } from "@/components/site/PropertySearchPanel";
 import { HOME_COPY } from "@/lib/i18n/home-copy";
 import { truncateForMeta } from "@/lib/site-seo";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
+import { useSiteCurrency } from "@/lib/site-currency";
 import { BALI_PROPERTIES_PAGE_SURFACE } from "@/lib/home-section-surfaces";
 import { cn } from "@/lib/utils";
 import {
@@ -39,6 +40,7 @@ const LISTINGS_PAGE_SIZE = 9;
 
 export default function Projects() {
   const language = useSiteLanguage();
+  const currency = useSiteCurrency();
   const [locationPath, setLocation] = useLocation();
   const t = useMemo(() => {
     const map: Record<SiteLanguage, Record<string, string>> = {
@@ -224,9 +226,9 @@ export default function Projects() {
             },
             idx,
           )
-        : inventoryRowToFeaturedModel(item.row, idx),
+        : inventoryRowToFeaturedModel(item.row, idx, currency),
     );
-  }, [projects, listingsRaw, filters, search]);
+  }, [projects, listingsRaw, filters, search, currency]);
 
   const listingsTotalPages = Math.max(1, Math.ceil(portfolioFeaturedModels.length / LISTINGS_PAGE_SIZE));
   const listingsPageSafe = Math.min(listingsPage, listingsTotalPages - 1);

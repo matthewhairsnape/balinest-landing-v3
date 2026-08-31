@@ -21,21 +21,28 @@ function applyAmountSuffix(n: number, suffix: string | undefined): number {
   return n;
 }
 
-/** Parse legacy free-form USD strings like "USD 2,800,000" or "2800000". */
+/** Parse legacy free-form USD strings like "USD 2,800,000", "$1.4m", or "2800000". */
 export function parseUsdFromFreeText(text: string | undefined | null): number | null {
   if (!text?.trim()) return null;
-  const cleaned = text.replace(/[^\d.,kKmM]/g, " ").trim();
+  const raw = text.trim();
+  const compact = raw.match(/^\$?\s*([\d.,]+)\s*([kKmM])\s*$/);
+  if (compact) {
+    const base = parseFloat(compact[1]!.replace(/,/g, ""));
+    if (!Number.isFinite(base) || base <= 0) return null;
+    return compact[2]!.toLowerCase() === "m" ? base * 1_000_000 : base * 1_000;
+  }
+  const cleaned = raw.replace(/[^\d.,kKmM]/g, " ").trim();
   if (!cleaned) return null;
   const suffix = cleaned.match(/([\d.,]+)\s*([kKmM])\s*$/);
   if (suffix) {
     const base = parseFloat(suffix[1]!.replace(/,/g, ""));
-    if (!Number.isFinite(base)) return null;
+    if (!Number.isFinite(base) || base <= 0) return null;
     return suffix[2]!.toLowerCase() === "m" ? base * 1_000_000 : base * 1_000;
   }
   const match = cleaned.match(/[\d.,]+/);
   if (!match) return null;
   const num = parseFloat(match[0].replace(/,/g, ""));
-  return Number.isFinite(num) ? num : null;
+  return Number.isFinite(num) && num > 0 ? num : null;
 }
 
 /**

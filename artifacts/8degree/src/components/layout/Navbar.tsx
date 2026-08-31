@@ -12,15 +12,16 @@ import {
   type SiteLanguage,
 } from "@/lib/site-language";
 import {
-  CURRENCY_CHANGE_EVENT,
-  CURRENCY_STORAGE_KEY,
+  setSiteCurrency,
+  useSiteCurrency,
+  type SiteCurrency,
 } from "@/lib/site-currency";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [language, setLanguage] = useState<SiteLanguage>("en");
-  const [currency, setCurrency] = useState("USD");
+  const currency = useSiteCurrency();
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
   const [isPropertyMenuOpen, setIsPropertyMenuOpen] = useState(false);
@@ -60,7 +61,6 @@ export function Navbar() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     setLanguage(safeLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)));
-    setCurrency(window.localStorage.getItem(CURRENCY_STORAGE_KEY) ?? "USD");
   }, []);
 
   useEffect(() => {
@@ -69,12 +69,6 @@ export function Navbar() {
     document.documentElement.lang = language;
     window.dispatchEvent(new Event("site-language-change"));
   }, [language]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
-    window.dispatchEvent(new Event(CURRENCY_CHANGE_EVENT));
-  }, [currency]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -322,7 +316,7 @@ export function Navbar() {
                       currency === opt.value && "bg-white/20"
                     )}
                     onClick={() => {
-                      setCurrency(opt.value);
+                      setSiteCurrency(opt.value as SiteCurrency);
                       setIsCurrencyMenuOpen(false);
                     }}
                   >
@@ -663,7 +657,7 @@ export function Navbar() {
                           currency === opt.value && "bg-white/20"
                         )}
                         onClick={() => {
-                          setCurrency(opt.value);
+                          setSiteCurrency(opt.value as SiteCurrency);
                           setIsCurrencyMenuOpen(false);
                         }}
                       >
@@ -760,11 +754,14 @@ export function Navbar() {
           </div>
 
           <div className="mt-4 border-t border-white/20 pt-4">
-            <Link href="/contact" className="block" onClick={() => setIsOpen(false)}>
-              <Button className="w-full rounded-none border border-white text-white tracking-widest uppercase hover:bg-white hover:text-[#01514E]">
+            <Button
+              asChild
+              className="w-full rounded-none border border-white tracking-widest uppercase text-white hover:bg-white hover:text-[#01514E]"
+            >
+              <Link href="/contact" onClick={() => setIsOpen(false)}>
                 {copy.enquire}
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       )}

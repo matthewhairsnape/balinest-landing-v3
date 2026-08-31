@@ -777,11 +777,11 @@ export default function About() {
       {/* Hero */}
       <div className="relative h-[55vh] min-h-[420px] overflow-hidden">
         <img
-          src={SITE_MEDIA.heroPoster}
-          alt="Bali"
+          src={SITE_MEDIA.aboutHero}
+          alt="8 Degree team at a Bali property advisory meeting"
           className="hero-image-breathe h-full w-full object-cover object-center"
           onError={(e) => {
-            e.currentTarget.src = SITE_MEDIA.heroStill;
+            e.currentTarget.src = SITE_MEDIA.heroPoster;
           }}
         />
         <div className="absolute inset-0 bg-black/50" />

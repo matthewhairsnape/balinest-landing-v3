@@ -27,17 +27,17 @@ export const SITE_MEDIA = {
   topArea: "/site-media/area-canggu.jpg",
   /** Navbar Guides mega menu hero (left column). */
   guidesDropdown: "/site-media/guides-dropdown-hero.png",
+  /** About page hero (`/about`). */
+  aboutHero: "/site-media/about-hero.jpg",
 
   team: [
     { src: "/site-media/team-robert.jpg",   name: "Robert",   role: "CEO" },
     { src: "/site-media/team-stephen.jpg",  name: "Stephen",  role: "Listing Agent" },
-    { src: "/site-media/team-maya.jpg",     name: "Maya",     role: "Property Adviser" },
     { src: "/site-media/team-ryan.jpg",     name: "Ryan",     role: "Marketing Manager" },
     { src: "/site-media/team-mariam.jpg",   name: "Mariam",   role: "Business Office Manager" },
     { src: "/site-media/team-yohanes.jpg",  name: "Yohanes",  role: "Executive Sales Advisor" },
     { src: "/site-media/team-kinan.jpg",    name: "Kinan",    role: "Social Media Manager" },
     { src: "/site-media/team-rangga.jpg",   name: "Rangga",   role: "Photographer & Graphic Designer" },
-    { src: "/site-media/team-charis.jpg",   name: "Charis",   role: "Videographer" },
   ] as const,
 
   areas: [
