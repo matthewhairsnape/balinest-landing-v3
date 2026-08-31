@@ -1,7 +1,10 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { isChunkLoadError } from "@/lib/lazy-with-retry";
 import "./index.css";
+
+const CHUNK_RELOAD_KEY = "8degree:chunk-reload";
 
 class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   constructor(props: { children: ReactNode }) {
@@ -15,6 +18,10 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[8degree] root error:", error.message, info.componentStack);
+    if (isChunkLoadError(error) && typeof sessionStorage !== "undefined" && !sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+      window.location.reload();
+    }
   }
 
   render() {
@@ -26,7 +33,18 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
           <pre className="mt-4 max-h-[55vh] overflow-auto rounded-lg border border-[#01514E]/15 bg-white p-4 text-left text-xs text-[#1c1917]/90">
             {this.state.error.stack}
           </pre>
-          <p className="mt-4 text-sm text-[#1c1917]/70">Try a hard refresh (Cmd+Shift+R). If it continues, open the browser console (Cmd+Option+J) for details.</p>
+          <p className="mt-4 text-sm text-[#1c1917]/70">
+            {isChunkLoadError(this.state.error)
+              ? "This page was updated — reload to fetch the latest version."
+              : "Try a hard refresh (Cmd+Shift+R). If it continues, open the browser console (Cmd+Option+J) for details."}
+          </p>
+          <button
+            type="button"
+            className="mt-4 rounded-full bg-[#01514E] px-5 py-2 text-sm font-medium text-white"
+            onClick={() => window.location.reload()}
+          >
+            Reload page
+          </button>
         </div>
       );
     }
