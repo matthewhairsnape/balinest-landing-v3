@@ -34,6 +34,7 @@ import {
 } from "@/lib/home-section-surfaces";
 import { HOME_COPY } from "@/lib/i18n/home-copy";
 import { journalFeaturedImageSrc, JOURNAL_DEFAULT_FEATURED_IMAGE } from "@/lib/journal-featured-image";
+import { journalPostPath } from "@/lib/site-links";
 
 type AdvantageStatRow = { value: string; description: string };
 
@@ -427,7 +428,7 @@ export default function Home() {
               latestJournalPosts.map((post) => {
                 const imageSrc = journalFeaturedImageSrc(post.featuredImageUrl);
                 return (
-                  <Link key={post.id} href={`/blog/${post.slug}`} className="group block">
+                  <Link key={post.slug} href={journalPostPath(post.slug)} className="group block">
                     <article className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted">
                       <img
                         src={imageSrc}

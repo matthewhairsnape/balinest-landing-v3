@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
 import { journalFeaturedImageSrc, JOURNAL_DEFAULT_FEATURED_IMAGE } from "@/lib/journal-featured-image";
+import { journalPostPath } from "@/lib/site-links";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function Blog() {
@@ -60,7 +61,7 @@ export default function Blog() {
   }[language];
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [brokenImages, setBrokenImages] = useState<Set<number>>(() => new Set());
-  const { data, isLoading } = useListBlogPosts({ limit: 20 });
+  const { data, isLoading } = useListBlogPosts({ limit: 100 });
   const { data: catData } = useListBlogCategories();
 
   const posts = (data?.posts ?? []).filter(p =>
@@ -159,13 +160,13 @@ export default function Blog() {
               const imageSrc = journalFeaturedImageSrc(post.featuredImageUrl);
               return (
               <motion.div
-                key={post.id}
+                key={post.slug}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
                 data-testid={`card-blog-${post.id}`}
               >
-                <Link href={`/blog/${post.slug}`}>
+                <Link href={journalPostPath(post.slug)}>
                   <div className="group cursor-pointer">
                     <div className="relative aspect-video overflow-hidden bg-muted mb-4">
                       {imageSrc && !brokenImages.has(post.id) ? (

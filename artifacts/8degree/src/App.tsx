@@ -177,6 +177,9 @@ function Router() {
       <Route path="/long-term-rentals" component={wrapPublic(LongTermRentals)} />
       <Route path="/long-term-rentals/" component={wrapPublic(LongTermRentals)} />
 
+      <Route path="/journal/:slug" component={wrapPublic(BlogDetail)} />
+      <Route path="/:slug" component={wrapPublic(BlogDetail)} />
+
       <Route component={NotFound} />
     </Switch>
   );

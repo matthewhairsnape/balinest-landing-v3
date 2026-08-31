@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { Seo } from "@/components/site/Seo";
 import { truncateForMeta } from "@/lib/site-seo";
 import { SITE_MEDIA } from "@/lib/site-assets";
+import { SITE_CONTACT, SITE_WHATSAPP_URL } from "@/lib/site-links";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 const CONTACT_COPY: Record<SiteLanguage, Record<string, string>> = {
@@ -51,10 +52,10 @@ export default function Contact() {
   });
 
   const contactDetails = [
-    { icon: MapPin, label: "Location", value: "Jalan Laksmana 88, Seminyak, Bali, Indonesia 80361" },
-    { icon: Mail, label: "Email", value: "hello@8degree.com" },
-    { icon: Phone, label: "Phone", value: "+62 812 3456 7890" },
-    { icon: MessageCircle, label: "WhatsApp", value: "+62 812 3456 7890" },
+    { icon: MapPin, label: "Location", value: SITE_CONTACT.location },
+    { icon: Mail, label: "Email", value: SITE_CONTACT.email, href: `mailto:${SITE_CONTACT.email}` },
+    { icon: Phone, label: "Phone", value: SITE_CONTACT.phone, href: `tel:${SITE_CONTACT.phone.replace(/\s/g, "")}` },
+    { icon: MessageCircle, label: "WhatsApp", value: SITE_CONTACT.whatsappDisplay, href: SITE_WHATSAPP_URL },
   ];
 
   return (
@@ -62,7 +63,7 @@ export default function Contact() {
       <Seo
         title="Contact · enquire about Bali property"
         description={truncateForMeta(
-          "Contact 8 Degree in Seminyak for villa sales, developments, and investment enquiries across Bali.",
+          "Contact 8 Degree in Canggu for villa sales, developments, and investment enquiries across Bali.",
         )}
         path="/contact"
       />
@@ -111,14 +112,20 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground tracking-[0.2em] uppercase mb-1">{item.label}</p>
-                    <p className="text-sm">{item.value}</p>
+                    {"href" in item && item.href ? (
+                      <a href={item.href} className="text-sm hover:text-primary transition-colors" target={item.href.startsWith("http") ? "_blank" : undefined} rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}>
+                        {item.value}
+                      </a>
+                    ) : (
+                      <p className="text-sm">{item.value}</p>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
             <div className="mt-8 pt-8 border-t border-border">
               <a
-                href="https://wa.me/6281234567890"
+                href={SITE_WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
               >

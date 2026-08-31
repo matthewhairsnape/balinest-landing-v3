@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
-import { Seo } from "@/components/site/Seo";
+import { SITE_WHATSAPP_URL } from "@/lib/site-links";
 import {
   canonicalUrl,
   jsonLdGraph,
@@ -354,7 +354,7 @@ export default function ProjectDetail() {
               <p className="mt-2 font-sans text-3xl font-light tracking-[0.04em]">{formatPrice(project.priceFrom, project.currency)}</p>
 
               <a
-                href={`https://wa.me/6281234567890?text=Hi, I am interested in ${encodeURIComponent(project.title)}`}
+                href={SITE_WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-8 block"

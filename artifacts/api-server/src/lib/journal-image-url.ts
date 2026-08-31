@@ -45,7 +45,7 @@ export function resolveJournalFeaturedImageUrl(
   for (const candidate of candidates) {
     if (!candidate?.trim()) continue;
     const driveId = driveFileIdFromFeaturedUrl(candidate);
-    if (driveId) return driveThumbnailUrl(driveId);
+    if (driveId) return inventoryThumbUrl(driveId);
   }
   return null;
 }

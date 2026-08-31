@@ -8,6 +8,12 @@ import { useLocation } from "wouter";
 const LEGACY_REDIRECTS: Record<string, string> = {
 };
 
+function blogSlugCanonicalRedirect(path: string): string | null {
+  const m = /^\/blog\/([^/?#]+)\/?$/.exec(path);
+  if (!m?.[1]) return null;
+  return `/${decodeURIComponent(m[1])}`;
+}
+
 function normalizePath(path: string): string {
   if (!path) return "/";
   const noQuery = path.split("?")[0] ?? path;
@@ -20,6 +26,11 @@ export function LegacyPathRedirect() {
 
   useEffect(() => {
     const raw = location || window.location.pathname;
+    const blogCanonical = blogSlugCanonicalRedirect(raw);
+    if (blogCanonical) {
+      window.location.replace(blogCanonical);
+      return;
+    }
     const exact = LEGACY_REDIRECTS[raw] ?? LEGACY_REDIRECTS[`${raw}/`];
     const normalized = normalizePath(raw);
     const dest =

@@ -21,7 +21,7 @@ import {
   listingPriceLine,
   listingShortBlurb,
 } from "@/lib/portfolio-listing";
-import { Seo } from "@/components/site/Seo";
+import { SITE_WHATSAPP_URL } from "@/lib/site-links";
 import {
   canonicalUrl,
   jsonLdGraph,
@@ -811,9 +811,7 @@ export default function ListingDetail() {
   const paragraphs = description
     ? description.split(/\n\n+/).filter((p) => p.trim() && !/^([•·▪◦■□●○✓✔★◆➤➡️→\-*]+\s|\d+\.\s)/.test(p.trim())).map((p) => p.trim())
     : [];
-  const whatsappHref = `https://wa.me/6281234567890?text=${encodeURIComponent(
-    `Hi, I'm interested in ${listing.title} (${listing.code})`,
-  )}`;
+  const whatsappHref = SITE_WHATSAPP_URL;
 
   const heroImages = allImages.slice(0, 6);
   const remainingCount = Math.max(0, allImages.length - heroImages.length);

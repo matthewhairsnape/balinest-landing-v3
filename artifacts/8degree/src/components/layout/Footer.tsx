@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { Facebook, Instagram, Linkedin, MapPin, Youtube } from "lucide-react";
-import type { SVGProps } from "react";
-import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
+import { SITE_CONTACT, SITE_REDDNOTE_URL, SITE_WHATSAPP_URL } from "@/lib/site-links";
 
 function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -241,10 +240,10 @@ export function Footer() {
               <a href="https://www.instagram.com/8degree.co/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><Instagram size={20} /></a>
               <a href="https://www.facebook.com/p/8-Degree-Real-Estate-61551808627078/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><Facebook size={20} /></a>
               <a href="https://id.linkedin.com/company/8degreerealestate" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><Linkedin size={20} /></a>
-              <a href="#" aria-label="WhatsApp" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><WhatsAppIcon className="h-5 w-5" /></a>
+              <a href={SITE_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><WhatsAppIcon className="h-5 w-5" /></a>
               <a href="https://www.youtube.com/@8Degreeco" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><Youtube size={20} /></a>
               <a href="https://id.pinterest.com/8degree/" target="_blank" rel="noopener noreferrer" aria-label="Pinterest" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><PinterestIcon className="h-5 w-5" /></a>
-              <a href="https://www.xiaohongshu.com/user/profile/6534ab3c000000000d004713?xsec_token=YBZyIeFu1RtijpXgo6036NerpTZnmTrzUQjllOXl6vuT4=&xsec_source=app_share&xhsshare=CopyLink&shareRedId=ODs1NERHN0w2NzUyOTgwNjZHOTc4PDc8&apptime=1776071179&share_id=49d038ccb54b43fe98e041414e7af137&tab=note" target="_blank" rel="noopener noreferrer" aria-label="Rednote" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><RednoteIcon className="h-5 w-5" /></a>
+              <a href={SITE_REDDNOTE_URL} target="_blank" rel="noopener noreferrer" aria-label="Rednote" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><RednoteIcon className="h-5 w-5" /></a>
               <a href="https://www.tiktok.com/@8degree.co" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-primary-foreground/80 transition-colors hover:text-primary-foreground"><TiktokIcon className="h-5 w-5" /></a>
             </div>
           </div>

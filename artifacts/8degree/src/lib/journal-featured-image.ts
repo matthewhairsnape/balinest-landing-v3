@@ -19,7 +19,7 @@ export function driveJournalThumbnailUrl(fileId: string, size = "w800"): string 
 
 export const JOURNAL_DEFAULT_FEATURED_IMAGE = "/site-media/journal-hero.png";
 
-/** Browser-safe featured image src — Drive thumbnails match property listing cards. */
+/** Browser-safe featured image src — proxied Drive thumbs (same as listing cards). */
 export function journalFeaturedImageSrc(url: string | null | undefined): string {
   if (!url?.trim()) return JOURNAL_DEFAULT_FEATURED_IMAGE;
   const t = url.trim();
@@ -31,8 +31,8 @@ export function journalFeaturedImageSrc(url: string | null | undefined): string 
     return JOURNAL_DEFAULT_FEATURED_IMAGE;
   }
   const driveId = driveFileIdFromJournalImageUrl(t);
-  if (driveId) return driveJournalThumbnailUrl(driveId);
-  if (/^https:\/\/drive\.google\.com\/thumbnail/i.test(t)) return t;
+  if (driveId) return `/api/inventory/thumb/${encodeURIComponent(driveId)}`;
+  if (/^\/api\/inventory\/thumb\//i.test(t)) return t;
   if (t.startsWith("/site-media/")) return t;
   if (/^https?:\/\//i.test(t)) return t;
   return JOURNAL_DEFAULT_FEATURED_IMAGE;

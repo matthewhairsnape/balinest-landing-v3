@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Seo } from "@/components/site/Seo";
 import { canonicalUrl, jsonLdGraph, organizationJsonLdNode, truncateForMeta } from "@/lib/site-seo";
 import { journalFeaturedImageSrc, JOURNAL_DEFAULT_FEATURED_IMAGE } from "@/lib/journal-featured-image";
+import { journalPostPath } from "@/lib/site-links";
 import { type SiteLanguage, useSiteLanguage } from "@/lib/site-language";
 
 export default function BlogDetail() {
@@ -20,8 +21,10 @@ export default function BlogDetail() {
     zh: { back: "返回专栏", ready: "准备投资了吗？", guide: "下载投资指南", yourName: "您的姓名", email: "邮箱地址", getGuide: "获取指南", related: "延伸阅读", minRead: "分钟阅读" },
     tr: { back: "Bloga Don", ready: "Yatirima Hazir misiniz?", guide: "Yatirim Rehberini Indir", yourName: "Adiniz", email: "E-posta", getGuide: "Rehberi Al", related: "Daha Fazla Okuma", minRead: "dk okuma" },
   }[language];
-  const [, params] = useRoute("/blog/:slug");
-  const slug = params?.slug ?? "";
+  const [, blogParams] = useRoute("/blog/:slug");
+  const [, journalParams] = useRoute("/journal/:slug");
+  const [, rootParams] = useRoute("/:slug");
+  const slug = blogParams?.slug ?? journalParams?.slug ?? rootParams?.slug ?? "";
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const createEnquiry = useCreateEnquiry();
@@ -41,7 +44,7 @@ export default function BlogDetail() {
         "@type": "Article",
         headline: post.title,
         description: truncateForMeta(post.excerpt),
-        url: canonicalUrl(`/blog/${encodeURIComponent(post.slug)}`),
+        url: canonicalUrl(journalPostPath(post.slug)),
         datePublished: post.publishedAt ?? undefined,
         author: { "@type": "Person", name: post.author },
         ...(post.featuredImageUrl
@@ -69,7 +72,7 @@ export default function BlogDetail() {
         <Seo
           title="Journal article"
           description="Loading article."
-          path={`/blog/${encodeURIComponent(slug)}`}
+          path={journalPostPath(slug)}
         />
         <div className="min-h-screen bg-background pt-32">
           <div className="container mx-auto max-w-3xl px-6 space-y-4">
@@ -88,7 +91,7 @@ export default function BlogDetail() {
         <Seo
           title="Article not found"
           description="This journal article does not exist or was removed."
-          path={`/blog/${encodeURIComponent(slug)}`}
+          path={journalPostPath(slug)}
           noindex
         />
         <div className="min-h-screen bg-background pt-32 text-center">
@@ -106,7 +109,7 @@ export default function BlogDetail() {
       <Seo
         title={post.title}
         description={truncateForMeta(post.excerpt)}
-        path={`/blog/${encodeURIComponent(post.slug)}`}
+        path={journalPostPath(post.slug)}
         image={heroImage !== JOURNAL_DEFAULT_FEATURED_IMAGE ? heroImage : undefined}
         type="article"
         jsonLd={postJsonLd}
@@ -199,7 +202,7 @@ export default function BlogDetail() {
               {related.map(p => {
                 const relatedImage = journalFeaturedImageSrc(p.featuredImageUrl);
                 return (
-                <Link key={p.id} href={`/blog/${p.slug}`}>
+                <Link key={p.slug} href={journalPostPath(p.slug)}>
                   <div className="group cursor-pointer">
                     <div className="aspect-video overflow-hidden bg-muted mb-3">
                       <img
